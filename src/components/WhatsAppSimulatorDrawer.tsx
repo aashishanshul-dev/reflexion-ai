@@ -577,14 +577,14 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
       </div>
 
       {/* Switch Teammate Persona Bar */}
-      <div className="flex items-center justify-between gap-2 border-b border-hairline bg-paper px-4 py-2 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline bg-paper px-4 py-2 text-xs">
+        <div className="flex items-center gap-2 min-w-[175px] flex-1">
           <span className="text-slate font-medium shrink-0">Teammate:</span>
           <select
             aria-label="Select Teammate"
             value={selectedPhone}
             onChange={(e) => setSelectedPhone(e.target.value)}
-            className="min-w-0 truncate rounded-md border border-hairline-strong bg-surface px-2 py-1 text-xs font-medium text-ink focus:border-signal focus:outline-none"
+            className="min-w-0 flex-1 truncate rounded-md border border-hairline-strong bg-surface px-2 py-1 text-xs font-medium text-ink focus:border-signal focus:outline-none"
           >
             {onOwnerMessage &&
               ownerOptions.map((m) => (

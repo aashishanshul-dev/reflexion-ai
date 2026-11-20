@@ -24,6 +24,7 @@ import {
   SopRoleReplacement,
 } from '../lib/teamGraph';
 import { normalizeIndianPhone } from '../lib/phoneText';
+import { authorityLabel, languageLabel } from '../lib/plainLabels';
 
 const AUTHORITY_OPTIONS: AuthorityLevel[] = [
   'OWNER',
@@ -289,7 +290,7 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
             >
               {AUTHORITY_OPTIONS.map((a) => (
                 <option key={a} value={a}>
-                  {a}
+                  {authorityLabel(a)}
                 </option>
               ))}
             </select>
@@ -305,7 +306,7 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
             >
               {LANGUAGE_OPTIONS.map((l) => (
                 <option key={l} value={l}>
-                  {l}
+                  {languageLabel(l)}
                 </option>
               ))}
             </select>
@@ -776,7 +777,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
               >
                 {LANGUAGE_OPTIONS.map((l) => (
                   <option key={l} value={l}>
-                    {l}
+                    {languageLabel(l)}
                   </option>
                 ))}
               </select>
@@ -827,7 +828,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
               >
                 {AUTHORITY_OPTIONS.map((a) => (
                   <option key={a} value={a}>
-                    {a}
+                    {authorityLabel(a)}
                   </option>
                 ))}
               </select>

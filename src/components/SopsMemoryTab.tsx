@@ -18,6 +18,7 @@ import {
 import { DemoVisitorsPanel } from './DemoVisitorsPanel';
 import {
   aiStageLabel,
+  formatPlainCategoryTokens,
   memoryCategoryLabel,
   SECTION_EXPLAINERS,
   validationStatusLabel,
@@ -1061,7 +1062,12 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                             </span>
                             {sample.aiInstruction && (
                               <span className="text-[11px] text-slate font-medium">
-                                {sample.aiInstruction}
+                                {formatPlainCategoryTokens(
+                                  sample.aiInstruction,
+                                  Object.fromEntries(
+                                    state.category_sops.map((c) => [c.categoryId, c.categoryName])
+                                  )
+                                )}
                               </span>
                             )}
                           </div>
@@ -1135,7 +1141,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                   </h3>
                 </div>
                 <p className="text-xs text-slate">
-                  Controls Eisenhower 4-quadrant assignment, Major vs. Minor scope, RACI allocation, and SOP micro-step generation in Meditate Studio.
+                  Controls priority assignment, Big vs. Small task scope, who does what, and standard checklist generation in Meditate.
                 </p>
                 <textarea
                   rows={14}
@@ -1228,7 +1234,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold">{sop.categoryId}</span>
+                      <span className="text-xs font-bold">{sop.categoryName}</span>
                       <span
                         className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
                           isSelected
@@ -1271,7 +1277,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
             >
               <div className="border-b border-hairline pb-3 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-ink">
-                  {isCreatingSop ? 'Create New Category SOP' : `Edit SOP: ${sopCode}`}
+                  {isCreatingSop ? 'Create New Task Type' : `Edit Task Type: ${sopName || sopCode}`}
                 </h3>
                 <span className="text-xs text-slate">Injected into AI task generation</span>
               </div>
@@ -1317,8 +1323,8 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                     onChange={(e) => setSopClass(e.target.value as Classification)}
                     className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs text-ink focus:border-signal focus:outline-none"
                   >
-                    <option value="MAJOR">MAJOR</option>
-                    <option value="MINOR">MINOR</option>
+                    <option value="MAJOR">Big task</option>
+                    <option value="MINOR">Quick task</option>
                   </select>
                 </div>
               </div>
@@ -2133,7 +2139,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                       <th className="py-2 pr-3">Stage</th>
                       <th className="py-2 pr-3">Model</th>
                       <th className="py-2 pr-3">Temp / Tokens</th>
-                      <th className="py-2 pr-3">Prompt Version</th>
+                      <th className="py-2 pr-3">Privacy Mode</th>
                       <th className="py-2 pr-3">Latency</th>
                       <th className="py-2 pr-3">Validation</th>
                     </tr>
@@ -2153,8 +2159,8 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                         <td className="py-2 pr-3 font-mono tabular-nums text-[11px]">
                           {log.temperature} / {log.maxOutputTokens}
                         </td>
-                        <td className="py-2 pr-3 font-mono text-[11px] text-slate">
-                          {log.promptVersion}
+                        <td className="py-2 pr-3 text-[11px] text-slate">
+                          Protected
                         </td>
                         <td className="py-2 pr-3 font-mono tabular-nums text-[11px]">{log.latencyMs}ms</td>
                         <td className="py-2 pr-3">

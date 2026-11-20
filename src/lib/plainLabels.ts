@@ -7,6 +7,7 @@
 import type {
   AiStageName,
   AiValidationStatus,
+  AuthorityLevel,
   BossReviewType,
   Classification,
   PreferredLanguage,
@@ -99,6 +100,19 @@ export function languageLabel(lang: PreferredLanguage | string | undefined | nul
   return (LANGUAGE_LABELS as Record<string, string>)[lang] || 'Hinglish';
 }
 
+export const AUTHORITY_LABELS: Record<AuthorityLevel, string> = {
+  OWNER: 'Owner',
+  BOSS: 'Owner',
+  MANAGER: 'Manager',
+  SUPERVISOR: 'Supervisor',
+  STAFF: 'Staff',
+};
+
+export function authorityLabel(level: AuthorityLevel | string | undefined | null): string {
+  if (!level) return 'Staff';
+  return (AUTHORITY_LABELS as Record<string, string>)[level] || 'Staff';
+}
+
 export const MEMORY_CATEGORY_LABELS: Record<SystemMemoryCategory, string> = {
   BUSINESS_RULE: 'Business rule',
   VENDOR_FACT: 'Vendor fact',
@@ -164,4 +178,26 @@ export function toFriendlyErrorMessage(
   // Remove leading SCREAMING_SNAKE_CASE codes like "UNKNOWN_RACI_SLOT: "
   const cleaned = trimmed.replace(/^[A-Z][A-Z0-9_]{2,}:\s*/, '').trim();
   return cleaned || fallback;
+}
+
+const DEFAULT_CATEGORY_LABELS: Record<string, string> = {
+  EVENT_SETUP: 'Lawn & event setup',
+  VENDOR_PURCHASE: 'Vendor purchases & rentals',
+  POWER: 'Power & backup',
+  MAINTENANCE: 'Maintenance & repairs',
+  SAFETY_SANITATION: 'Safety & sanitation',
+  OPS: 'Operations',
+};
+
+/**
+ * Replaces raw uppercase category ID tokens (e.g. EVENT_SETUP, VENDOR_PURCHASE)
+ * in user-facing text with their friendly category names.
+ */
+export function formatPlainCategoryTokens(
+  text: string,
+  categoryNames?: Record<string, string>
+): string {
+  if (!text) return '';
+  const merged = { ...DEFAULT_CATEGORY_LABELS, ...(categoryNames || {}) };
+  return text.replace(/\b[A-Z][A-Z0-9_]{2,}\b/g, (token) => merged[token] || token);
 }
