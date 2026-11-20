@@ -268,8 +268,13 @@ export const DraftTaskEditor: React.FC<DraftTaskEditorProps> = ({
             </div>
             <p className="text-sm font-bold text-ink break-words">{draft.title || 'Untitled task'}</p>
             <p className="text-[11px] text-slate tabular-nums">
-              Responsible: <strong className="text-ink">{nameOf(draft.raci?.R) || 'not chosen'}</strong> · Due {formatDueLabel(draft)} ·{' '}
-              {draft.microSteps?.length || 0} step{(draft.microSteps?.length || 0) === 1 ? '' : 's'}
+              Responsible: <strong className="text-ink">{nameOf(draft.raci?.R) || 'not chosen'}</strong> · Due {formatDueLabel(draft)}
+              {draft.dueDateAssumed ? (
+                <span className="ml-1 rounded bg-warning-soft border border-warning-border px-1 py-0.2 text-[10px] font-semibold text-warning">
+                  assumed
+                </span>
+              ) : null}{' '}
+              · {draft.microSteps?.length || 0} step{(draft.microSteps?.length || 0) === 1 ? '' : 's'}
             </p>
             {draft.assignmentReason ? (
               <p className="mt-1 text-[11px] leading-snug text-slate">

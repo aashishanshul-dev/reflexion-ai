@@ -26,15 +26,23 @@ export function isGeminiBusyError(err: unknown): boolean {
 }
 
 /**
+ * True when the error is any 429 / quota / rate-limit error (RESOURCE_EXHAUSTED).
+ * Switching to the backup model immediately avoids wasting interactive latency on
+ * a model whose quota is currently exhausted.
+ */
+export function isGeminiQuotaError(err: unknown): boolean {
+  const raw = String((err as any)?.message ?? err ?? '');
+  const status = Number((err as any)?.status) || Number(raw.match(/"code"\s*:\s*(\d{3})/)?.[1]) || 0;
+  return status === 429 || /RESOURCE_EXHAUSTED/i.test(raw);
+}
+
+/**
  * True when the error is a 429 for a per-day quota (e.g. quotaId
  * "GenerateRequestsPerDayPerProjectPerModel"). Retrying the same model today
  * is pointless, so callers should switch to the backup model immediately.
  */
 export function isGeminiDailyQuotaError(err: unknown): boolean {
-  const raw = String((err as any)?.message ?? err ?? '');
-  const status = Number((err as any)?.status) || Number(raw.match(/"code"\s*:\s*(\d{3})/)?.[1]) || 0;
-  const exhausted = status === 429 || /RESOURCE_EXHAUSTED/i.test(raw);
-  return exhausted && /PerDay/i.test(raw);
+  return isGeminiQuotaError(err) && /PerDay/i.test(String((err as any)?.message ?? err ?? ''));
 }
 
 export interface BusyRetryEvent {
@@ -61,15 +69,24 @@ export async function callWithBusyRetry<T>(opts: {
   onRetry?: (event: BusyRetryEvent) => void;
   /** Return false to move straight to the backup model instead of retrying the same model. */
   shouldRetrySameModel?: (err: unknown) => boolean;
-  /** When primary and backup are distinct and both stay busy (non-daily-quota, non-timeout), pause briefly and try primary once more. */
+  /** When primary and backup are distinct and both stay busy (non-quota, non-timeout), pause briefly and try primary once more. */
   finalPrimaryRetryDelayMs?: number;
+  /** Optional overall time budget (ms) across all attempts and sleeps (e.g. 45_000). */
+  totalTimeoutMs?: number;
+  now?: () => number;
 }): Promise<BusyRetryResult<T>> {
   const models = [...new Set(opts.models.map((m) => m?.trim()).filter((m): m is string => !!m))];
   if (models.length === 0) throw new Error('callWithBusyRetry needs at least one model');
   const delays = opts.retryDelaysMs ?? DEFAULT_BUSY_RETRY_DELAYS_MS;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const now = opts.now ?? (() => Date.now());
+  const deadlineMs =
+    typeof opts.totalTimeoutMs === 'number' && opts.totalTimeoutMs > 0
+      ? now() + opts.totalTimeoutMs
+      : null;
+  const remainingMs = () => (deadlineMs === null ? Infinity : deadlineMs - now());
   const canRetrySameModel =
-    opts.shouldRetrySameModel ?? ((err: unknown) => !isGeminiDailyQuotaError(err));
+    opts.shouldRetrySameModel ?? ((err: unknown) => !(err instanceof GeminiTimeoutError) && !isGeminiQuotaError(err));
 
   let attempts = 0;
   let lastError: unknown;
@@ -77,6 +94,9 @@ export async function callWithBusyRetry<T>(opts: {
   for (let m = 0; m < models.length; m++) {
     const model = models[m];
     for (let i = 0; i <= delays.length; i++) {
+      if (attempts > 0 && remainingMs() <= 0) {
+        throw lastError ?? new GeminiTimeoutError(model, opts.totalTimeoutMs ?? 45_000);
+      }
       attempts++;
       try {
         const result = await opts.call(model);
@@ -86,7 +106,9 @@ export async function callWithBusyRetry<T>(opts: {
         lastError = err;
         if (m === 0 && primaryError === undefined) primaryError = err;
         const retrySame = canRetrySameModel(err);
-        const nextDelayMs = retrySame && i < delays.length ? delays[i] : null;
+        const plannedDelay = retrySame && i < delays.length ? delays[i] : null;
+        const nextDelayMs =
+          plannedDelay !== null && remainingMs() > plannedDelay ? plannedDelay : null;
         opts.onRetry?.({ model, attempt: i + 1, error: err, nextDelayMs });
         if (nextDelayMs === null) break;
         await sleep(nextDelayMs);
@@ -98,17 +120,20 @@ export async function callWithBusyRetry<T>(opts: {
     opts.finalPrimaryRetryDelayMs &&
     opts.finalPrimaryRetryDelayMs > 0 &&
     models.length > 1 &&
-    canRetrySameModel(primaryError ?? lastError)
+    canRetrySameModel(primaryError ?? lastError) &&
+    remainingMs() > opts.finalPrimaryRetryDelayMs
   ) {
     const primary = models[0];
     await sleep(opts.finalPrimaryRetryDelayMs);
-    attempts++;
-    try {
-      const result = await opts.call(primary);
-      return { result, modelUsed: primary, attempts, usedBackupModel: false };
-    } catch (err) {
-      if (!isGeminiBusyError(err)) throw err;
-      lastError = err;
+    if (remainingMs() > 0) {
+      attempts++;
+      try {
+        const result = await opts.call(primary);
+        return { result, modelUsed: primary, attempts, usedBackupModel: false };
+      } catch (err) {
+        if (!isGeminiBusyError(err)) throw err;
+        lastError = err;
+      }
     }
   }
 

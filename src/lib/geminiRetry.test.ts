@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GeminiTimeoutError } from './geminiErrors';
-import { callWithBusyRetry, isGeminiBusyError, isGeminiDailyQuotaError, type BusyRetryEvent } from './geminiRetry';
+import {
+  callWithBusyRetry,
+  INTERACTIVE_BUSY_RETRY_DELAYS_MS,
+  isGeminiBusyError,
+  isGeminiDailyQuotaError,
+  isGeminiQuotaError,
+  type BusyRetryEvent,
+} from './geminiRetry';
 
 const busy503 = Object.assign(
   new Error('{"error":{"code":503,"message":"This model is currently experiencing high demand.","status":"UNAVAILABLE"}}'),
@@ -148,21 +155,74 @@ test('callWithBusyRetry switches to the backup model at once on a daily-quota 42
   assert.equal(events[0].nextDelayMs, null);
 });
 
-test('callWithBusyRetry still waits and retries a per-minute 429', async () => {
+test('callWithBusyRetry switches straight to backup on any 429 quota error with zero retries', async () => {
+  const tried: string[] = [];
+  const waits: number[] = [];
+  const out = await callWithBusyRetry({
+    models: ['gemini-flash-latest', 'gemini-flash-lite-latest'],
+    retryDelaysMs: INTERACTIVE_BUSY_RETRY_DELAYS_MS,
+    sleep: async (ms) => { waits.push(ms); },
+    call: async (m) => {
+      tried.push(m);
+      if (m === 'gemini-flash-latest') throw perMinute429;
+      return `ok:${m}`;
+    },
+  });
+  assert.deepEqual(tried, ['gemini-flash-latest', 'gemini-flash-lite-latest']);
+  assert.deepEqual(waits, []);
+  assert.equal(out.modelUsed, 'gemini-flash-lite-latest');
+  assert.equal(out.usedBackupModel, true);
+  assert.equal(isGeminiQuotaError(perMinute429), true);
+});
+
+test('503-then-success retries primary with 1s, 2s, 4s backoff before succeeding', async () => {
   let calls = 0;
   const waits: number[] = [];
   const out = await callWithBusyRetry({
-    models: ['a', 'b'],
-    retryDelaysMs: [10, 20],
+    models: ['gemini-flash-latest', 'gemini-flash-lite-latest'],
+    retryDelaysMs: INTERACTIVE_BUSY_RETRY_DELAYS_MS,
     sleep: async (ms) => { waits.push(ms); },
     call: async (m) => {
       calls++;
-      if (calls < 2) throw perMinute429;
-      return m;
+      if (calls <= 3) throw busy503;
+      return `ok:${m}`;
     },
   });
-  assert.equal(out.modelUsed, 'a');
-  assert.deepEqual(waits, [10]);
+  assert.equal(out.modelUsed, 'gemini-flash-latest');
+  assert.equal(out.usedBackupModel, false);
+  assert.equal(out.attempts, 4);
+  assert.deepEqual(waits, [1_000, 2_000, 4_000]);
+});
+
+test('both-busy fails cleanly and respects the 45s totalTimeoutMs cap', async () => {
+  let nowMs = 0;
+  const tried: string[] = [];
+  const waits: number[] = [];
+  await assert.rejects(
+    callWithBusyRetry({
+      models: ['gemini-flash-latest', 'gemini-flash-lite-latest'],
+      retryDelaysMs: INTERACTIVE_BUSY_RETRY_DELAYS_MS,
+      finalPrimaryRetryDelayMs: 1_500,
+      totalTimeoutMs: 45_000,
+      now: () => nowMs,
+      sleep: async (ms) => {
+        waits.push(ms);
+        nowMs += ms;
+      },
+      call: async (m) => {
+        tried.push(m);
+        const remaining = 45_000 - nowMs;
+        nowMs += Math.min(4_000, Math.max(0, remaining));
+        throw busy503;
+      },
+    }),
+    (err) => err === busy503
+  );
+  // Total elapsed time must stay within the 45s cap.
+  assert.ok(nowMs <= 45_000, `expected elapsed <= 45000ms, got ${nowMs}`);
+  assert.ok(tried.includes('gemini-flash-latest'));
+  assert.ok(tried.includes('gemini-flash-lite-latest'));
+  assert.ok(waits.length > 0);
 });
 
 test('callWithBusyRetry throws the daily-quota error when the backup is also out of quota', async () => {

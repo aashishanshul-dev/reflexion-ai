@@ -40,7 +40,8 @@ export type ValidationIssueCode =
   | 'PROJECT_MISSING_HEAD_OR_STAGE'
   | 'QUICK_TASK_EXTRA_HEADS'
   | 'MAX_CHECKLIST_STEPS_EXCEEDED'
-  | 'PHONE_NUMBER_IN_TEXT';
+  | 'PHONE_NUMBER_IN_TEXT'
+  | 'UNKNOWN_SLOT_PLACEHOLDER';
 
 export interface ValidationIssue {
   code: ValidationIssueCode;
@@ -320,32 +321,72 @@ export function validateMeditatePlan(
     }
   };
 
+  // 2d. Reject unknown slot placeholders ({{P99}} / [P99]) in any text field so the AI
+  //     cannot invent non-existent team members.
+  const checkKnownSlotPlaceholders = (val: unknown, fieldPath: string) => {
+    if (typeof val !== 'string' || !val) return;
+    const unknownSlots = new Set<string>();
+    const re = /\{\{\s*(P\d+)\s*\}\}|\[\s*(P\d+)\s*\]/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(val)) !== null) {
+      const slotId = (m[1] || m[2] || '').toUpperCase();
+      if (slotId && !slotDir.slotToEntry.has(slotId)) {
+        unknownSlots.add(slotId);
+      }
+    }
+    if (unknownSlots.size > 0) {
+      issues.push({
+        code: 'UNKNOWN_SLOT_PLACEHOLDER',
+        path: fieldPath,
+        message: `Field "${fieldPath}" references unknown team slot(s): ${Array.from(unknownSlots).join(', ')}.`,
+      });
+    }
+  };
+
   checkTextNoPhones(plan.chatReplyToBoss, 'chatReplyToBoss');
+  checkKnownSlotPlaceholders(plan.chatReplyToBoss, 'chatReplyToBoss');
   checkTextNoPhones(plan.reasoningSummary, 'reasoningSummary');
+  checkKnownSlotPlaceholders(plan.reasoningSummary, 'reasoningSummary');
   checkTextNoPhones(plan.agendaTitle, 'agendaTitle');
+  checkKnownSlotPlaceholders(plan.agendaTitle, 'agendaTitle');
   checkTextNoPhones(plan.noteToSave?.text, 'noteToSave.text');
+  checkKnownSlotPlaceholders(plan.noteToSave?.text, 'noteToSave.text');
   checkTextNoPhones(plan.pendingRuleToSave?.fact, 'pendingRuleToSave.fact');
+  checkKnownSlotPlaceholders(plan.pendingRuleToSave?.fact, 'pendingRuleToSave.fact');
   checkTextNoPhones(plan.v2Intent?.replyToOwner, 'v2Intent.replyToOwner');
+  checkKnownSlotPlaceholders(plan.v2Intent?.replyToOwner, 'v2Intent.replyToOwner');
   if (Array.isArray(plan.v2Intent?.missingCritical)) {
     plan.v2Intent.missingCritical.forEach((mc: unknown, mIdx: number) => {
       checkTextNoPhones(mc, `v2Intent.missingCritical[${mIdx}]`);
+      checkKnownSlotPlaceholders(mc, `v2Intent.missingCritical[${mIdx}]`);
     });
   }
 
   if (Array.isArray(plan.suggestedMemoryRules)) {
     plan.suggestedMemoryRules.forEach((rule: any, idx: number) => {
       checkTextNoPhones(rule?.fact, `suggestedMemoryRules[${idx}].fact`);
+      checkKnownSlotPlaceholders(rule?.fact, `suggestedMemoryRules[${idx}].fact`);
     });
   }
 
   if (Array.isArray(plan.draftedTasks)) {
     plan.draftedTasks.forEach((task: any, idx: number) => {
       checkTextNoPhones(task?.title, `draftedTasks[${idx}].title`);
+      checkKnownSlotPlaceholders(task?.title, `draftedTasks[${idx}].title`);
       checkTextNoPhones(task?.shortTag, `draftedTasks[${idx}].shortTag`);
+      checkKnownSlotPlaceholders(task?.shortTag, `draftedTasks[${idx}].shortTag`);
       checkTextNoPhones(task?.dueHint, `draftedTasks[${idx}].dueHint`);
       checkTextNoPhones(
         task?.outboundWhatsappPreview,
         `draftedTasks[${idx}].outboundWhatsappPreview`
+      );
+      checkKnownSlotPlaceholders(
+        task?.outboundWhatsappPreview,
+        `draftedTasks[${idx}].outboundWhatsappPreview`
+      );
+      checkKnownSlotPlaceholders(
+        task?.assignmentReason,
+        `draftedTasks[${idx}].assignmentReason`
       );
       checkNoWeakness(task?.title, `draftedTasks[${idx}].title`);
       checkNoWeakness(task?.shortTag, `draftedTasks[${idx}].shortTag`);
@@ -357,6 +398,7 @@ export function validateMeditatePlan(
       if (Array.isArray(task?.microSteps)) {
         task.microSteps.forEach((step: unknown, sIdx: number) => {
           checkTextNoPhones(step, `draftedTasks[${idx}].microSteps[${sIdx}]`);
+          checkKnownSlotPlaceholders(step, `draftedTasks[${idx}].microSteps[${sIdx}]`);
           checkNoWeakness(step, `draftedTasks[${idx}].microSteps[${sIdx}]`);
         });
       }
@@ -366,7 +408,9 @@ export function validateMeditatePlan(
   if (Array.isArray(plan.wbsHeads)) {
     plan.wbsHeads.forEach((head: any, hIdx: number) => {
       checkTextNoPhones(head?.title, `wbsHeads[${hIdx}].title`);
+      checkKnownSlotPlaceholders(head?.title, `wbsHeads[${hIdx}].title`);
       checkTextNoPhones(head?.contextSummary, `wbsHeads[${hIdx}].contextSummary`);
+      checkKnownSlotPlaceholders(head?.contextSummary, `wbsHeads[${hIdx}].contextSummary`);
       checkTextNoPhones(head?.dueHint, `wbsHeads[${hIdx}].dueHint`);
       if (Array.isArray(head?.dynamicStages)) {
         head.dynamicStages.forEach((st: unknown, sIdx: number) => {

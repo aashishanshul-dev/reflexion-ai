@@ -67,7 +67,7 @@ export function describeGeminiError(err: unknown, model: string): string {
   }
   const status = Number((err as any)?.status) || Number(raw.match(/\b(4\d\d|5\d\d)\b/)?.[1]) || 0;
   if (status === 429 || /RESOURCE_EXHAUSTED|quota/i.test(raw)) {
-    return `${model} is over your Gemini usage limit (free-tier quota)`;
+    return `${model} is over your Gemini usage limit`;
   }
   if (status === 404 || /not found|no longer available/i.test(raw)) {
     return `${model} is not available to your API key`;
@@ -93,7 +93,7 @@ export function buildGeminiFailureMessage(
   if (fallback && fallback.model !== primary.model) {
     parts.push(`the backup model ${describeGeminiError(fallback.error, fallback.model)}`);
   }
-  return `Sorry, the AI couldn't finish this request: ${parts.join(', and ')}. Nothing was changed. Google's AI is busy or your billing isn't active yet. If this keeps happening, check your Gemini billing. Try again in a minute.`;
+  return `Sorry, the AI couldn't finish this request right now: ${parts.join(', and ')}. Nothing was changed — please try again in a moment.`;
 }
 
 /**

@@ -33,7 +33,7 @@ export const ALL_MODEL_IDS: readonly string[] = [
 ];
 
 /** Bump when saved settings need a one-time migration in sanitizeModelTuning. */
-export const MODEL_DEFAULTS_VERSION = 5;
+export const MODEL_DEFAULTS_VERSION = 6;
 
 export type ModelTuningStageKey = 'meditate' | 'intent' | 'planner' | 'bufferEvaluation' | 'message';
 
@@ -49,7 +49,7 @@ export function defaultStageConfig(stage: ModelTuningStageKey): StageModelConfig
     case 'planner':
       return {
         model: GEMINI_MODELS.balanced,
-        fallbackModel: GEMINI_MODELS.strong,
+        fallbackModel: GEMINI_MODELS.fast,
         temperature: 0.2,
         // Flash and Pro think before answering and that counts against this limit;
         // 4096 cut a three-task plan off mid-JSON in a live check.
@@ -107,7 +107,10 @@ export function sanitizeModelTuning<T extends Partial<AiModelTuningConfig> | und
   // One-time migration (v5): planner stages saved with the old 4096-token limit and no
   // thinking cap get 8192 tokens and the capped thinking budget (a plan was cut off mid-JSON).
   const needsV5Migration = (tuning.modelDefaultsVersion ?? 0) < 5;
-  if (needsV5Migration) {
+  // One-time migration (v6): planner uses Flash as primary with Flash-Lite as backup
+  // (instead of Pro) for faster, more reliable fallback under the 45s cap.
+  const needsV6Migration = (tuning.modelDefaultsVersion ?? 0) < 6;
+  if (needsV6Migration) {
     next.modelDefaultsVersion = MODEL_DEFAULTS_VERSION;
     changed = true;
   }
@@ -121,13 +124,16 @@ export function sanitizeModelTuning<T extends Partial<AiModelTuningConfig> | und
       String(cfg.model || '').trim() === GEMINI_MODELS.fast &&
       String(cfg.fallbackModel || '').trim() === GEMINI_MODELS.fast;
     const model = !onFreeTierPair && isKnownModel(cfg.model) ? cfg.model.trim() : defaults.model;
+    const plannerStage = stage === 'planner' || stage === 'meditate';
+    const migrateProFallback =
+      (needsV2Migration || (needsV6Migration && plannerStage)) &&
+      String(cfg.fallbackModel || '').trim() === GEMINI_MODELS.strong;
     const fallbackModel =
       !onFreeTierPair &&
       isKnownModel(cfg.fallbackModel) &&
-      !(needsV2Migration && cfg.fallbackModel.trim() === GEMINI_MODELS.strong)
+      !migrateProFallback
         ? cfg.fallbackModel.trim()
         : defaults.fallbackModel;
-    const plannerStage = stage === 'planner' || stage === 'meditate';
     const raiseTokens = needsV5Migration && plannerStage && (cfg.maxOutputTokens ?? 0) < (defaults.maxOutputTokens ?? 0);
     const addBudget = needsV5Migration && plannerStage && cfg.thinkingBudget === undefined && defaults.thinkingBudget !== undefined;
     if (model !== cfg.model || fallbackModel !== cfg.fallbackModel || raiseTokens || addBudget) {

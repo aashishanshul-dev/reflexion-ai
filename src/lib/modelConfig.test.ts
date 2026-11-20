@@ -12,8 +12,8 @@ import { createInitialSeedState } from './seedData';
 
 test('stage defaults: smallest model that does the job, and a different model as backup', () => {
   const expected = {
-    meditate: [GEMINI_MODELS.balanced, GEMINI_MODELS.strong],
-    planner: [GEMINI_MODELS.balanced, GEMINI_MODELS.strong],
+    meditate: [GEMINI_MODELS.balanced, GEMINI_MODELS.fast],
+    planner: [GEMINI_MODELS.balanced, GEMINI_MODELS.fast],
     intent: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
     bufferEvaluation: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
     message: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
@@ -61,7 +61,7 @@ test('sanitizeModelTuning replaces retired models, keeps owner choices, and pres
   assert.equal(tuning.bufferEvaluation.model, GEMINI_MODELS.balanced);
   assert.equal(tuning.bufferEvaluation.fallbackModel, defaultStageConfig('bufferEvaluation').fallbackModel);
   assert.equal(tuning.maxRecentConversationTurns, 6);
-  assert.equal(tuning.modelDefaultsVersion, 5);
+  assert.equal(tuning.modelDefaultsVersion, 6);
   // Input is not mutated.
   assert.equal(saved.meditate.model, 'gemini-2.5-flash');
 
@@ -75,7 +75,7 @@ test('v4: stages left on the free-tier pair (Flash-Lite + Flash-Lite) move to th
   const { tuning, changed } = sanitizeModelTuning(saved);
   assert.equal(changed, true);
   assert.deepEqual([tuning.intent.model, tuning.intent.fallbackModel], [GEMINI_MODELS.fast, GEMINI_MODELS.balanced]);
-  assert.deepEqual([tuning.planner.model, tuning.planner.fallbackModel], [GEMINI_MODELS.balanced, GEMINI_MODELS.strong]);
+  assert.deepEqual([tuning.planner.model, tuning.planner.fallbackModel], [GEMINI_MODELS.balanced, GEMINI_MODELS.fast]);
   assert.equal(tuning.planner.temperature, 0.3);
   assert.deepEqual([tuning.message.model, tuning.message.fallbackModel], [GEMINI_MODELS.fast, GEMINI_MODELS.balanced]);
   // After the migration, an owner who picks Flash-Lite for both again is left alone.

@@ -8,6 +8,7 @@ import { buildDateContextLine, businessTodayIso } from './src/lib/planDates.ts';
 import {
   buildGeminiFailureMessage,
   describeGeminiError,
+  GEMINI_CALL_TIMEOUT_MS,
   GeminiCallFailedError,
   GeminiTimeoutError,
   isCompleteJsonText,
@@ -16,7 +17,7 @@ import {
 import {
   callWithBusyRetry,
   INTERACTIVE_BUSY_RETRY_DELAYS_MS,
-  isGeminiDailyQuotaError,
+  isGeminiQuotaError,
 } from './src/lib/geminiRetry.ts';
 import {
   answerQuestionFromTasksFallback,
@@ -123,20 +124,28 @@ async function generateWithFallbackModel(
   contents: any,
   config: any
 ) {
-  // Every Gemini call is capped at GEMINI_CALL_TIMEOUT_MS (45s). On transient 503 /
-  // rate-limit responses, retry the same model with short backoff (1s, 2s, 4s) before
-  // moving to fallback. Daily-quota 429s and 45s timeouts move to fallback at once.
+  // Every Gemini call (including retries + fallback) is capped at GEMINI_CALL_TIMEOUT_MS (45s).
+  // On transient 503 / overloaded responses, retry the same model with short backoff (1s, 2s, 4s)
+  // before moving to fallback. Any 429 quota error or timeout moves to fallback at once.
+  const overallStartMs = Date.now();
   const callModel = async (model: string) => {
+    const remainingMs = GEMINI_CALL_TIMEOUT_MS - (Date.now() - overallStartMs);
+    if (remainingMs <= 0) {
+      throw new GeminiTimeoutError(model, GEMINI_CALL_TIMEOUT_MS);
+    }
     // A thinking budget is tuned for the primary model; the backup uses its own default.
     const { thinkingConfig, ...rest } = config || {};
     const modelConfig = model === primaryModel && thinkingConfig ? { ...rest, thinkingConfig } : rest;
-    const response = await withGeminiTimeout(model, (signal) =>
-      ai.models.generateContent({
-        model,
-        contents,
-        // abortSignal cancels the HTTP request when withGeminiTimeout gives up.
-        config: { ...modelConfig, abortSignal: signal },
-      })
+    const response = await withGeminiTimeout(
+      model,
+      (signal) =>
+        ai.models.generateContent({
+          model,
+          contents,
+          // abortSignal cancels the HTTP request when withGeminiTimeout gives up.
+          config: { ...modelConfig, abortSignal: signal },
+        }),
+      remainingMs
     );
     recentlyTimedOutModels.delete(model);
     return response;
@@ -160,7 +169,8 @@ async function generateWithFallbackModel(
       call: callModel,
       retryDelaysMs: INTERACTIVE_BUSY_RETRY_DELAYS_MS,
       finalPrimaryRetryDelayMs: 1_500,
-      shouldRetrySameModel: (err) => !(err instanceof GeminiTimeoutError) && !isGeminiDailyQuotaError(err),
+      totalTimeoutMs: GEMINI_CALL_TIMEOUT_MS,
+      shouldRetrySameModel: (err) => !(err instanceof GeminiTimeoutError) && !isGeminiQuotaError(err),
       onRetry: (event) => {
         if (!errorsByModel.has(event.model)) errorsByModel.set(event.model, event.error);
         if (event.error instanceof GeminiTimeoutError) {

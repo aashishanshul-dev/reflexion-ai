@@ -201,7 +201,9 @@ export function routeMeditateV2Intent(
       route: 'ANSWER_QUESTION',
       effectiveKind: 'QUESTION',
       confirmChips: [],
-      replyToOwner: intent.replyToOwner?.trim() || '',
+      replyToOwner:
+        intent.replyToOwner?.trim() ||
+        "I don't have enough information in the current board or team data to answer that.",
     };
   }
 
@@ -738,15 +740,20 @@ Classify the owner's message strictly by semantic meaning — NEVER use word cou
 
 INTENT KINDS:
 1. "TASK": The owner wants operational work executed, assigned, scheduled, inspected, procured, repaired, audited, or updated on a project head.
-   - Populate "missingCritical" ONLY when essential facts required to safely assign or execute the work are genuinely unknown (e.g. missing target location/asset when ambiguous, or missing item/specification). Do NOT invent facts, and do NOT flag optional details like duration, priority quadrant, or task size as missingCritical.
+   - Populate "missingCritical" ONLY when essential facts required to safely assign or execute the work are genuinely unknown (such as who/which client or vendor, where/location/asset, or when/deadline if needed and not already in context, or missing item/specification). Do NOT invent facts, and do NOT flag optional details like duration, priority quadrant, or task size as missingCritical.
    - MUST-KNOW FACTS (when a MUST-KNOW FACTS BY TASK TYPE list is given): if the work belongs to a listed task type, check each listed fact against the owner's message, the conversation so far, approved memory and the business profile. Add every fact that is still unknown to "missingCritical" in plain words. Never fill one in by guessing. This list adds to the rule above; it never replaces it.
    - If the owner says to go ahead without the missing facts (for example "plan it anyway" or "baad mein bata dunga"), set "missingCritical" to [] and plan with what is known.
    - If "missingCritical" is non-empty, write ONE concise combined clarifying question in "replyToOwner" covering the missing items.
    - Set "followUpForHeadId" ONLY if the owner is clearly following up on or modifying one of the existing WBS Heads listed in EXISTING WBS HEADS; otherwise set "followUpForHeadId" to null.
 2. "NOTE": The owner is recording an observation, serial number, reference fact, or memo for future reference without requesting an active task or standing policy rule.
 3. "RULE": The owner is stating a standing operational rule, policy, vendor constraint, or recurring preference ("From now on...", "Never...", "Always..."). Set "ruleCategory" to BUSINESS_RULE, VENDOR_FACT, STAFF_TRAIT, or SOP_PREFERENCE.
-4. "QUESTION": The owner is asking a status or workload question about current tasks or team operations. Answer accurately in "replyToOwner" using CURRENT TASK BOARD DATA without inventing facts.
+4. "QUESTION": The owner is asking a status or workload question about current tasks or team operations. Answer accurately in "replyToOwner" using CURRENT TASK BOARD DATA, ANONYMIZED TEAM SLOTS, EXISTING WBS HEADS, APPROVED SYSTEM MEMORY, and BUSINESS PROFILE without inventing facts. If the provided data does not contain the answer, say so plainly (for example: "I don't have that information in the current board or team data.") — never guess or make something up.
 5. "CASUAL": Greeting, sign-off, acknowledgement, or casual conversation with no operational task, note, rule, or board query.
+
+NO HALLUCINATION / STRICT GROUNDING:
+- Never invent a person, client, vendor, quantity, price, or date that the owner did not give (and is not in the provided roster, board, memory, or business profile). Use ONLY people who exist in ANONYMIZED TEAM SLOTS.
+- If a must-know fact (who, where, when) is missing, ask ONE short question instead of guessing.
+- If you cannot answer a question from the provided data, say so plainly — never make something up.
 
 CONFIDENCE & SLOT PRIVACY:
 - Set "confidence" between 0.0 and 1.0 reflecting how unambiguous the owner's intent kind is. If the message could reasonably be interpreted in multiple ways (e.g. an observation that might be a note OR an implicit repair request), set confidence below 0.75.
@@ -892,6 +899,12 @@ ${sampleDumpsText}
 NULLABLE ARITHMETIC FIELDS & DUE HINTS:
 - Unknown is allowed: startDate, durationDays, dueDate, quadrant, and majorOrMinor are nullable. Leave them null if not explicitly known instead of guessing; deterministic code fills defaults.
 - If the owner mentions a timing phrase (e.g. "tomorrow", "before Friday", "in 3 days", "before 5 PM"), put that natural phrase in "dueHint" (and leave startDate/dueDate null so code computes exact calendar dates).
+- If the owner did NOT give a date or timing phrase, leave startDate, dueDate, and dueHint as null — never invent a date or state an assumed date as fact in chatReplyToBoss, outboundWhatsappPreview, title, or microSteps.
+
+NO HALLUCINATION / STRICT GROUNDING:
+- Never invent a person, client, vendor, quantity, price, or date that the owner did not give (and is not in the provided roster, SOPs, or approved memory).
+- Use ONLY people who exist in ANONYMIZED TEAM SLOTS (${validSlotList}). Never invent external team members or unknown {{P...}} slot IDs.
+- If you cannot answer or a detail is not in the request/context, say so plainly or leave it out — never make something up.
 
 STRICT ANONYMIZED SLOT IDENTITY:
 - Valid roster Slot IDs: ${validSlotList}. Never assign a slot with OnLeave: true.
