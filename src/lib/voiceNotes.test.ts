@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildVoiceNotePrompt, buildVoiceNoteSpeechText, isVoiceNoteTextClean } from './voiceNotes';
+import { buildVoiceNotePrompt, buildVoiceNoteSpeechText, ensureWavAudio, isVoiceNoteTextClean } from './voiceNotes';
 import { buildSlotDirectory } from './promptBuilder';
 import { BANQUET_DEMO_PHONES, createBanquetDemoSeedState } from './demoBanquet';
 
@@ -29,4 +29,18 @@ test('banquet story: Ramesh, Gopal and Mahesh prefer voice notes (slide 12: Voic
   const voice = Object.values(state.team_members).filter((m) => m.prefersVoiceNotes).map((m) => m.phone).sort();
   const { RAMESH, GOPAL, MAHESH } = BANQUET_DEMO_PHONES;
   assert.deepEqual(voice, [RAMESH, GOPAL, MAHESH].sort());
+});
+
+test('ensureWavAudio wraps raw PCM with a 44-byte WAV header and passes RIFF WAV through', () => {
+  const pcm = new Uint8Array([1, 2, 3, 4]);
+  const wrapped = ensureWavAudio(pcm, 'audio/L16;rate=24000');
+  assert.equal(wrapped.mimeType, 'audio/wav');
+  assert.equal(wrapped.bytes.length, 48);
+  assert.equal(String.fromCharCode(...wrapped.bytes.slice(0, 4)), 'RIFF');
+  assert.equal(String.fromCharCode(...wrapped.bytes.slice(8, 12)), 'WAVE');
+
+  const riff = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0]);
+  const pass = ensureWavAudio(riff, 'audio/wav');
+  assert.equal(pass.bytes, riff);
+  assert.equal(pass.mimeType, 'audio/wav');
 });

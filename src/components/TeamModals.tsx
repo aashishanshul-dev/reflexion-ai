@@ -83,6 +83,9 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
     member.maxActiveTasks ?? 3
   );
   const [isOnLeave, setIsOnLeave] = useState(Boolean(member.isOnLeave));
+  const [prefersVoiceNotes, setPrefersVoiceNotes] = useState(
+    Boolean(member.prefersVoiceNotes)
+  );
   const [responsibilities, setResponsibilities] = useState(member.responsibilities || '');
   const [strengthsText, setStrengthsText] = useState((member.strengths || []).join(', '));
   const [weaknessesText, setWeaknessesText] = useState(
@@ -116,6 +119,7 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
     setWorkShiftEnd(member.workShiftEnd);
     setMaxActiveTasks(member.maxActiveTasks ?? 3);
     setIsOnLeave(Boolean(member.isOnLeave));
+    setPrefersVoiceNotes(Boolean(member.prefersVoiceNotes));
     setResponsibilities(member.responsibilities || '');
     setStrengthsText((member.strengths || []).join(', '));
     setWeaknessesText((member.weaknesses || []).join(', '));
@@ -192,6 +196,7 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
       workShiftEnd: workShiftEnd || '18:00',
       maxActiveTasks: Math.max(1, Math.min(25, Number(maxActiveTasks) || 3)),
       isOnLeave,
+      prefersVoiceNotes,
       responsibilities: responsibilities.trim(),
       strengths: splitPhrases(strengthsText),
       weaknesses: splitPhrases(weaknessesText),
@@ -350,6 +355,23 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
             />
           </div>
         </div>
+
+        <label className="flex items-start justify-between gap-3 rounded-xl border border-hairline bg-paper px-3 py-2.5 cursor-pointer">
+          <span>
+            <span className="block text-[11px] font-semibold text-ink">
+              Prefers voice notes
+            </span>
+            <span className="block text-[10px] text-slate leading-snug mt-0.5">
+              For staff who&apos;d rather listen than read — tasks and answers are sent as a voice note. The text stays visible too.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={prefersVoiceNotes}
+            onChange={(e) => setPrefersVoiceNotes(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-hairline-strong text-signal focus:ring-signal"
+          />
+        </label>
 
         {/* Reporting & Peer Connections */}
         <div className="space-y-3 pt-1 border-t border-hairline">
@@ -603,6 +625,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [workShiftEnd, setWorkShiftEnd] = useState('19:00');
   const [maxActiveTasks, setMaxActiveTasks] = useState(defaultLimit || 3);
   const [authorityLevel, setAuthorityLevel] = useState<AuthorityLevel>('STAFF');
+  const [prefersVoiceNotes, setPrefersVoiceNotes] = useState(false);
   const [reportsToPhone, setReportsToPhone] = useState('');
   const [responsibilities, setResponsibilities] = useState('');
   const [strengthsText, setStrengthsText] = useState('');
@@ -650,6 +673,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
       workShiftEnd: workShiftEnd || '19:00',
       dailyOverviewTime: '09:00',
       isOnLeave: false,
+      prefersVoiceNotes,
       lastInboundAt: new Date().toISOString(),
       bufferMode: 'STANDARD_15_MIN',
       stats: {
@@ -834,6 +858,23 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
               </select>
             </div>
           </div>
+
+          <label className="flex items-start justify-between gap-3 rounded-xl border border-hairline bg-paper px-3 py-2.5 cursor-pointer">
+            <span>
+              <span className="block text-[11px] font-semibold text-ink">
+                Prefers voice notes
+              </span>
+              <span className="block text-[10px] text-slate leading-snug mt-0.5">
+                For staff who&apos;d rather listen than read — tasks and answers are sent as a voice note. The text stays visible too.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={prefersVoiceNotes}
+              onChange={(e) => setPrefersVoiceNotes(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-hairline-strong text-signal focus:ring-signal"
+            />
+          </label>
 
           <div>
             <label className="block text-[11px] font-semibold text-ink mb-1">

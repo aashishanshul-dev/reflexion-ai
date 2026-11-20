@@ -25,6 +25,7 @@ import {
 import { isWithin24HrWindow, validateMediaAttachment } from '../lib/opsEngine';
 import { fetchVoiceNoteApi, runBufferBatchProcessorApi } from '../services/dataService';
 import { pickDefaultChatPhone } from '../lib/simulatorChat';
+import { ensureWavAudio } from '../lib/voiceNotes';
 
 interface WhatsAppSimulatorDrawerProps {
   isOpen: boolean;
@@ -106,8 +107,13 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const [voiceBusyId, setVoiceBusyId] = useState<string | null>(null);
   const [voicePlayingId, setVoicePlayingId] = useState<string | null>(null);
-  const playVoiceBrief = async (msgId: string, text: string, language: string) => {
-    if (voicePlayingId === msgId && voiceAudioRef.current) {
+  const playVoiceBrief = async (
+    msgId: string,
+    text: string,
+    language: string,
+    options?: { autoPlay?: boolean }
+  ) => {
+    if (!options?.autoPlay && voicePlayingId === msgId && voiceAudioRef.current) {
       voiceAudioRef.current.pause();
       setVoicePlayingId(null);
       return;
@@ -122,8 +128,11 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
           teamMembers: Object.values(state.team_members),
           ownerProfile: state.owner_profile,
         });
-        const bytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
-        url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+        const rawBytes = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
+        const playable = ensureWavAudio(rawBytes, mimeType);
+        url = URL.createObjectURL(
+          new Blob([playable.bytes.slice()], { type: playable.mimeType })
+        );
         voiceUrlsRef.current.set(msgId, url);
       }
       voiceAudioRef.current?.pause();
@@ -133,8 +142,13 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
       setVoicePlayingId(msgId);
       await audio.play();
     } catch (err: any) {
-      onNotify(err?.message || 'Could not play the voice note.');
       setVoicePlayingId(null);
+      const isAutoplayBlocked =
+        options?.autoPlay &&
+        (err?.name === 'NotAllowedError' || /notallowed|play\(\) failed|user didn't interact/i.test(String(err?.message || '')));
+      if (!isAutoplayBlocked) {
+        onNotify(err?.message || 'Could not play the voice note.');
+      }
     } finally {
       setVoiceBusyId(null);
     }
@@ -260,6 +274,41 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
     () => state.whatsapp_messages.filter((m) => m.employeePhone === selectedPhone),
     [state.whatsapp_messages, selectedPhone]
   );
+
+  const seenOutboundIdsRef = useRef<Set<string>>(new Set());
+  const seenScopeRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      seenScopeRef.current = '';
+      seenOutboundIdsRef.current = new Set();
+      return;
+    }
+    if (seenScopeRef.current !== selectedPhone) {
+      seenScopeRef.current = selectedPhone;
+      seenOutboundIdsRef.current = new Set(feedMessages.map((m) => m.id));
+      return;
+    }
+    const newOutbound = feedMessages.filter(
+      (m) =>
+        m.direction === 'OUTBOUND' &&
+        Boolean(m.text?.trim()) &&
+        !seenOutboundIdsRef.current.has(m.id)
+    );
+    for (const m of feedMessages) {
+      seenOutboundIdsRef.current.add(m.id);
+    }
+    if (selectedMember?.prefersVoiceNotes && newOutbound.length > 0) {
+      const latest = newOutbound[newOutbound.length - 1];
+      void playVoiceBrief(
+        latest.id,
+        latest.text,
+        selectedMember.preferredLanguage || 'HINDI',
+        { autoPlay: true }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, selectedPhone, feedMessages, selectedMember?.prefersVoiceNotes, selectedMember?.preferredLanguage]);
 
   useEffect(() => {
     if (isOpen) {
