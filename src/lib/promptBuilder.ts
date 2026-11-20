@@ -393,6 +393,29 @@ export function resolveSlotToPhone(
 /**
  * Replaces slot placeholders ({{P1}}, [P1], or standalone P1) with human display names for UI/WhatsApp output.
  */
+const DEVANAGARI_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+
+function toDigitAlternation(digits: string): string {
+  return digits
+    .split('')
+    .map((d) => {
+      const idx = Number(d);
+      return Number.isInteger(idx) && idx >= 0 && idx <= 9 ? `[${d}${DEVANAGARI_DIGITS[idx]}]` : escapeRegExp(d);
+    })
+    .join('');
+}
+
+function buildSlotTokenPattern(slotId: string): string {
+  const m = /^P(\d+)$/i.exec(slotId.trim());
+  if (!m) return escapeRegExp(slotId);
+  const numAlt = toDigitAlternation(m[1]);
+  return `(?:[Pp]${numAlt}|पी[\\s-]?${numAlt}|प[\\s-]?${numAlt})`;
+}
+
+/**
+ * Replaces {{P1}}, [P1], standalone P1, or Devanagari-transliterated slot tokens
+ * (e.g. पी3, पी३) with the human display name, and strips any orphan slot tokens.
+ */
 export function restoreDisplayNamesFromSlots(text: string | undefined | null, dir: SlotDirectory): string {
   if (!text) return '';
   let out = String(text);
@@ -400,13 +423,23 @@ export function restoreDisplayNamesFromSlots(text: string | undefined | null, di
   // Sort descending by slot number length so P10 is replaced before P1
   const sortedEntries = [...dir.entries].sort((a, b) => b.slotId.length - a.slotId.length);
   for (const entry of sortedEntries) {
-    const slotEsc = escapeRegExp(entry.slotId);
-    // Replace {{P1}} or [P1] first
-    out = out.replace(new RegExp(`\\{\\{\\s*${slotEsc}\\s*\\}\\}`, 'gi'), entry.name);
-    out = out.replace(new RegExp(`\\[\\s*${slotEsc}\\s*\\]`, 'gi'), entry.name);
-    // Replace standalone word P1
-    out = out.replace(new RegExp(`\\b${slotEsc}\\b`, 'g'), entry.name);
+    const tokenPat = buildSlotTokenPattern(entry.slotId);
+    const safeName = entry.name.replace(/\$/g, '$$$$');
+    // Replace {{P1}} / {{पी1}} or [P1] / [पी1] first
+    out = out.replace(new RegExp(`\\{\\{\\s*${tokenPat}\\s*\\}\\}`, 'gu'), safeName);
+    out = out.replace(new RegExp(`\\[\\s*${tokenPat}\\s*\\]`, 'gu'), safeName);
+    // Replace standalone slot token (works for both ASCII and Devanagari)
+    out = out.replace(new RegExp(`(?<![\\p{L}\\p{N}_])${tokenPat}(?![\\p{L}\\p{N}_])`, 'gu'), safeName);
   }
+
+  // Safety net: strip any unmapped/orphan slot token (Roman or Devanagari) so internal codes never leak
+  out = out
+    .replace(/\{\{\s*(?:[Pp]\d+|पी[\s-]?[0-9०-९]+|प[\s-]?[0-9०-९]+)\s*\}\}/gu, '')
+    .replace(/\[\s*(?:[Pp]\d+|पी[\s-]?[0-9०-९]+|प[\s-]?[0-9०-९]+)\s*\]/gu, '')
+    .replace(/(?<![\p{L}\p{N}_])(?:P\d+|पी[\s-]?[0-9०-९]+)(?![\p{L}\p{N}_])/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,।.!?])/g, '$1')
+    .trim();
 
   return out;
 }
@@ -464,10 +497,13 @@ export function restoreNamesForRecipient(
   let out = String(text);
   const recipient = recipientPhone ? dir.phoneToEntry.get(recipientPhone) : undefined;
   if (recipient?.addressAs) {
-    const slotEsc = escapeRegExp(recipient.slotId);
+    const tokenPat = buildSlotTokenPattern(recipient.slotId);
     const replacement = recipient.addressAs.replace(/\$/g, '$$$$');
     out = out.replace(
-      new RegExp(`(?:\\{\\{\\s*${slotEsc}\\s*\\}\\}|\\[\\s*${slotEsc}\\s*\\]|\\b${slotEsc}\\b)${OPTIONAL_HONORIFIC}`, 'gu'),
+      new RegExp(
+        `(?:\\{\\{\\s*${tokenPat}\\s*\\}\\}|\\[\\s*${tokenPat}\\s*\\]|(?<![\\p{L}\\p{N}_])${tokenPat}(?![\\p{L}\\p{N}_]))${OPTIONAL_HONORIFIC}`,
+        'gu'
+      ),
       replacement
     );
   }

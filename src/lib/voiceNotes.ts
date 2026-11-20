@@ -10,7 +10,7 @@ import { scrubPiiToSlots, verifyZeroPiiInPrompt, type SlotDirectory } from './pr
 export function buildVoiceNoteSpeechText(text: string, dir: SlotDirectory): string {
   const anon = scrubPiiToSlots(String(text || ''), dir);
   return anon
-    .replace(/\{\{\s*P\d+\s*\}\}|\[\s*P\d+\s*\]|\bP\d+\b/g, '') // slot placeholders: dropped
+    .replace(/\{\{\s*(?:P\d+|पी[\s-]?[0-9०-९]+|प[\s-]?[0-9०-९]+)\s*\}\}|\[\s*(?:P\d+|पी[\s-]?[0-9०-९]+|प[\s-]?[0-9०-९]+)\s*\]|(?<![\p{L}\p{N}_])(?:P\d+|पी[\s-]?[0-9०-९]+)(?![\p{L}\p{N}_])/gu, '') // slot placeholders: dropped
     .replace(/\[REDACTED_PHONE\]/g, '')
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '') // emojis and symbols
     .replace(/[[\]]/g, '')

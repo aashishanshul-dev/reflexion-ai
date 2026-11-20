@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildVoiceNotePrompt, buildVoiceNoteSpeechText, ensureWavAudio, isVoiceNoteTextClean } from './voiceNotes';
-import { buildSlotDirectory } from './promptBuilder';
+import { buildSlotDirectory, deanonymizeBufferResponse } from './promptBuilder';
 import { BANQUET_DEMO_PHONES, createBanquetDemoSeedState } from './demoBanquet';
 
 const state = createBanquetDemoSeedState('2026-11-20T04:30:00.000Z');
@@ -43,4 +43,36 @@ test('ensureWavAudio wraps raw PCM with a 44-byte WAV header and passes RIFF WAV
   const pass = ensureWavAudio(riff, 'audio/wav');
   assert.equal(pass.bytes, riff);
   assert.equal(pass.mimeType, 'audio/wav');
+});
+
+test('deanonymizeBufferResponse and buildVoiceNoteSpeechText never leak Roman or Devanagari slot tokens (P3, पी3, पी३)', () => {
+  const gopal = state.team_members[BANQUET_DEMO_PHONES.GOPAL];
+  assert.ok(gopal);
+  const slot = dir.phoneToEntry.get(gopal.phone)!.slotId; // e.g. P3 or P4
+
+  const devanagariReply = `नमस्ते ${slot.replace(/^P/i, 'पी')}, बहुत बढ़िया। पी99`;
+  const suresh = state.team_members[BANQUET_DEMO_PHONES.SURESH];
+  assert.ok(suresh);
+  const sureshSlot = dir.phoneToEntry.get(suresh.phone)!.slotId;
+  const romanReply = `Namaste [${sureshSlot}] ji, kaam ho gaya. P99`;
+
+  const resDevanagari = deanonymizeBufferResponse(
+    { whatsappReplyInPreferredLanguage: devanagariReply },
+    dir,
+    gopal.phone
+  );
+  assert.doesNotMatch(resDevanagari.whatsappReplyInPreferredLanguage, /P\d+|पी\s*[0-9०-९]+/);
+  assert.match(resDevanagari.whatsappReplyInPreferredLanguage, new RegExp(gopal.addressAs || gopal.name));
+
+  const resRoman = deanonymizeBufferResponse(
+    { whatsappReplyInPreferredLanguage: romanReply },
+    dir,
+    suresh.phone
+  );
+  assert.doesNotMatch(resRoman.whatsappReplyInPreferredLanguage, /P\d+|पी\s*[0-9०-९]+/);
+  assert.match(resRoman.whatsappReplyInPreferredLanguage, new RegExp(suresh.addressAs || suresh.name));
+
+  const speech = buildVoiceNoteSpeechText('नमस्ते पी3, बहुत बढ़िया। [P3] पी३', dir);
+  assert.doesNotMatch(speech, /P\d+|पी\s*[0-9०-९]+/);
+  assert.equal(speech, 'नमस्ते, बहुत बढ़िया।');
 });
