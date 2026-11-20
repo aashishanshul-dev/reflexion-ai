@@ -8,6 +8,7 @@ import {
   GENERIC_PHOTO,
   parseStepPhotoRequirement,
   parseStepTarget,
+  resolveStepUpdates,
 } from './stepChecks';
 import { BANQUET_DEMO_PHONES, createBanquetDemoSeedState } from './demoBanquet';
 import { applyProcessedBufferResult } from './opsEngine';
@@ -136,4 +137,76 @@ test('banquet: Mahesh says "done" without a photo, so the gauge step and the tas
   const closed = done.tasks.find((t) => t.taskCode === 'T-303')!;
   assert.equal(closed.status, 'COMPLETED');
   assert.equal(closed.microSteps[3].photoVerified, true);
+});
+
+test('resolveStepUpdates: matches exact id and unambiguous 1-based position, skips collisions', () => {
+  const steps: MicroStep[] = [
+    { id: 'ms-a', label: 'Review dispatch log', status: 'PENDING' },
+    { id: 'ms-b', label: 'List client offices', status: 'PENDING' },
+    { id: 'ms-c', label: 'Share list on WhatsApp', status: 'PENDING' },
+  ];
+  const mapped = resolveStepUpdates(steps, [
+    { id: '1', status: 'DONE' },
+    { id: 'ms-c', status: 'PENDING' },
+  ]);
+  assert.equal(mapped.get('ms-a')?.status, 'DONE');
+  assert.equal(mapped.get('ms-b'), undefined);
+  assert.equal(mapped.get('ms-c')?.status, 'PENDING');
+
+  // Collision: two updates pointing at step 1 -> neither applied
+  const collided = resolveStepUpdates(steps, [
+    { id: '1', status: 'DONE' },
+    { id: 'step_1', status: 'PENDING' },
+  ]);
+  assert.equal(collided.get('ms-a'), undefined);
+});
+
+test('checklist progress: specific step ticks only that step & recomputes %; vague "sab theek hai" ticks nothing', () => {
+  const state = createBanquetDemoSeedState(NOW);
+  const t303 = state.tasks.find((t) => t.taskCode === 'T-303')!;
+  const resetTask = {
+    ...t303,
+    status: 'IN_PROGRESS' as const,
+    completionPercent: 0,
+    microSteps: t303.microSteps.map((s) => ({ ...s, status: 'PENDING' as const })),
+  };
+  const seeded = {
+    ...state,
+    tasks: state.tasks.map((t) => (t.taskCode === 'T-303' ? resetTask : t)),
+    inbound_message_buffer: {
+      [MAHESH]: {
+        ...state.inbound_message_buffer[RAMESH],
+        employeePhone: MAHESH,
+        messages: [{ id: 'm1', timestamp: NOW, type: 'text' as const, textContent: 'Sab theek hai' }],
+      },
+    },
+  };
+
+  // Vague reply -> empty updatedMicroSteps -> 0/4 done, 0%
+  const vagueRes = applyProcessedBufferResult(
+    seeded,
+    MAHESH,
+    { ...base, matchedTaskCode: 'T-303', completionPercent: 100, updatedMicroSteps: [] },
+    NOW
+  );
+  const afterVague = vagueRes.tasks.find((t) => t.taskCode === 'T-303')!;
+  assert.equal(afterVague.microSteps.filter((s) => s.status === 'DONE').length, 0);
+  assert.equal(afterVague.completionPercent, 0);
+
+  // Specific step 1 done -> only step 1 ticks -> 25% (even if AI said 100)
+  const step1Res = applyProcessedBufferResult(
+    seeded,
+    MAHESH,
+    {
+      ...base,
+      matchedTaskCode: 'T-303',
+      completionPercent: 100,
+      updatedMicroSteps: [{ id: '1', status: 'DONE' }],
+    },
+    NOW
+  );
+  const afterStep1 = step1Res.tasks.find((t) => t.taskCode === 'T-303')!;
+  assert.equal(afterStep1.microSteps[0].status, 'DONE');
+  assert.equal(afterStep1.microSteps[1].status, 'PENDING');
+  assert.equal(afterStep1.completionPercent, 25);
 });

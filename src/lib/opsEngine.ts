@@ -37,7 +37,7 @@ import { staffAddressName } from './staffNames.ts';
 import { buildShortTaskBrief } from './taskBrief.ts';
 import { sendBehindAlerts } from './behindAlerts.ts';
 import { sendOwnerDecisionPrompts } from './ownerWhatsapp.ts';
-import { applyStepUpdate, completionFromSteps, enrichStep } from './stepChecks.ts';
+import { applyStepUpdate, completionFromSteps, enrichStep, resolveStepUpdates } from './stepChecks.ts';
 import {
   buildEscalationArtifacts,
   buildStaffEscalationAck,
@@ -1998,17 +1998,17 @@ export function applyProcessedBufferResult(
   // Merge micro-step updates with code's checks: counts are clamped, and a photo step is
   // only DONE when an image was really sent and the AI says it shows what is required.
   const hasImage = buffer.messages.some((m) => (m.type === 'image' || m.type === 'video') && Boolean(m.base64Data || m.fileName));
-  const stepUpdates = new Map(aiResult.updatedMicroSteps.map((u) => [u.id, u]));
-  let photoHeldBack = false;
-  const mergedSteps = matchedTask.microSteps.map((raw) => {
-    const s = enrichStep(raw);
+  const enrichedSteps = matchedTask.microSteps.map(enrichStep);
+  const stepUpdates = resolveStepUpdates(enrichedSteps, aiResult.updatedMicroSteps);
+  const mergedSteps = enrichedSteps.map((s) => {
     const upd = stepUpdates.get(s.id);
     if (!upd) return s;
-    const res = applyStepUpdate(s, upd, hasImage);
-    if (res.heldBack) photoHeldBack = true;
-    return res.step;
+    const effectiveUpdate =
+      s.status === 'DONE' && upd.status === 'PENDING'
+        ? { ...upd, status: 'DONE' as const }
+        : upd;
+    return applyStepUpdate(s, effectiveUpdate, hasImage).step;
   });
-  const countsInPlay = mergedSteps.some((s) => s.targetCount);
 
   // Check if downstream tasks depend on this task with PARTIAL_OR_BOSS_APPROVAL
   const hasDownstreamHandoverGate = state.tasks.some(
@@ -2018,9 +2018,9 @@ export function applyProcessedBufferResult(
       t.dependency.triggerCondition === 'PARTIAL_OR_BOSS_APPROVAL'
   );
 
-  // Code does the arithmetic when steps carry counts or a photo check held a step back.
+  // Checklist steps are the source of truth for % complete whenever the task has steps.
   const clampedPercent =
-    countsInPlay || photoHeldBack
+    mergedSteps.length > 0
       ? completionFromSteps(mergedSteps)
       : Math.max(0, Math.min(100, Math.round(aiResult.completionPercent)));
   const allDone = mergedSteps.every((s) => s.status === 'DONE') && clampedPercent >= 100 && !aiResult.missingStepsAlert;

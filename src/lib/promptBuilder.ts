@@ -1186,7 +1186,11 @@ export function buildAnonymizedBufferPrompt(params: {
       `You are OpsCommand AI's Multimodal WhatsApp Batch Inspector.
 Inspect the employee's chronological buffered WhatsApp messages and any attached images, voice notes, or short videos (<15MB):
 1. CHRONOLOGICAL OVERRIDE RULE: If a later timestamped message in the batch corrects or retracts an earlier statement, use the LATEST timestamped message as ground truth.
-2. Match the batch to the employee's active task (matchedTaskCode) and evaluate every frozen micro-step id ('DONE', 'PENDING', or 'MISSED').
+2. Match the batch to the employee's active task (matchedTaskCode) and evaluate its frozen micro-steps into updatedMicroSteps:
+   - Copy the EXACT "id" string from ACTIVE TASKS & FROZEN MICRO-STEPS for each step you update.
+   - Set status = 'DONE' ONLY for the specific step(s) that the text, voice, or attached image/video directly proves are completed; keep unmentioned or unverified steps 'PENDING' (NEVER blindly mark all steps DONE).
+   - If a step has photoMustShow, set photoShows = true ONLY when an attached image/video clearly shows what photoMustShow asks for; otherwise set photoShows = false and keep status = 'PENDING'.
+   - If the reply is vague (e.g. "sab theek hai", "ok", "done" with no step detail or matching media), keep steps 'PENDING' and ask one short clarifying question in whatsappReplyInPreferredLanguage asking which specific step is completed.
 3. Draft whatsappReplyInPreferredLanguage strictly in ${scriptRule}, addressing the employee via their Slot placeholder {{${employeeSlot}}}.
 4. ESCALATION DETECTION (set escalateToBossReview = true, escalationSignal, and staffQuote):
    - ON_LEAVE: staff says they are on leave, sick, travelling, or unavailable.

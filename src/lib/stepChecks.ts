@@ -154,3 +154,52 @@ export function enrichSeedTaskSteps<T extends { microSteps: MicroStep[] }>(tasks
     }),
   }));
 }
+
+/**
+ * Matches AI step updates to a task's steps by exact `id` first, then by
+ * unambiguous 1-based step index (e.g. "1", "step_1", "s1") only when no
+ * exact match or index collision exists. Never guesses on ambiguity.
+ */
+export function resolveStepUpdates<T extends StepUpdate & { id: string }>(
+  steps: MicroStep[],
+  updates: T[] | null | undefined
+): Map<string, T> {
+  const resolved = new Map<string, T>();
+  if (!Array.isArray(updates) || updates.length === 0 || !Array.isArray(steps) || steps.length === 0) {
+    return resolved;
+  }
+
+  const stepIds = new Set(steps.map((s) => s.id));
+  const unmatched: T[] = [];
+
+  for (const upd of updates) {
+    if (!upd || typeof upd.id !== 'string') continue;
+    if (stepIds.has(upd.id)) {
+      resolved.set(upd.id, upd);
+    } else {
+      unmatched.push(upd);
+    }
+  }
+
+  // Unambiguous 1-based position fallback only for remaining unmatched updates
+  const candidateByIdx = new Map<number, T[]>();
+  for (const upd of unmatched) {
+    const m = /^(?:step[-_\s]?|s[-_]?|ms[-_]?)?(\d+)$/i.exec(upd.id.trim());
+    if (!m) continue;
+    const idx = Number(m[1]) - 1;
+    if (idx < 0 || idx >= steps.length) continue;
+    const targetStep = steps[idx];
+    if (resolved.has(targetStep.id)) continue;
+    const list = candidateByIdx.get(idx) || [];
+    list.push(upd);
+    candidateByIdx.set(idx, list);
+  }
+
+  for (const [idx, list] of candidateByIdx.entries()) {
+    if (list.length === 1) {
+      resolved.set(steps[idx].id, list[0]);
+    }
+  }
+
+  return resolved;
+}
