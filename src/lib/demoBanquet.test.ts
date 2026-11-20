@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BANQUET_DEMO_PHONES, createBanquetDemoSeedState } from './demoBanquet';
 import { createDemoStoryState, DEFAULT_DEMO_STORY, DEMO_STORIES, isDemoStoryId } from './demoStories';
-import { normalizeOpsDatabaseState } from '../services/dataService';
+import { loadDemoStory, normalizeOpsDatabaseState, saveDemoStory } from '../services/dataService';
 import { applyProcessedBufferResult } from './opsEngine';
 import { buildAnonymizedIntentPrompt } from './meditateV2';
 import { buildAnonymizedBufferPrompt } from './promptBuilder';
@@ -24,6 +24,32 @@ test('banquet story is the default and matches the pitch: owner + 5, slide-7 voi
   assert.equal(createDemoStoryState('water', NOW).business_profile.businessName, DEMO_STORIES.water.businessName);
   for (const id of ['banquet', 'water'] as const) {
     assert.equal(DEMO_STORIES[id].walkthrough.length, 6);
+  }
+});
+
+test('loadDemoStory defaults to DEFAULT_DEMO_STORY even with pre-story demo state, while respecting saved story choice', () => {
+  const prevStorage = (globalThis as { localStorage?: Storage }).localStorage;
+  const store = new Map<string, string>();
+  (globalThis as { localStorage?: Storage }).localStorage = {
+    get length() { return store.size; },
+    clear() { store.clear(); },
+    getItem(k: string) { return store.has(k) ? store.get(k)! : null; },
+    key(i: number) { return Array.from(store.keys())[i] ?? null; },
+    removeItem(k: string) { store.delete(k); },
+    setItem(k: string, v: string) { store.set(k, String(v)); },
+  };
+  try {
+    store.set('opscommand_ai_demo_state_v1', '{"legacy":true}');
+    assert.equal(loadDemoStory(), DEFAULT_DEMO_STORY);
+
+    saveDemoStory('water');
+    assert.equal(loadDemoStory(), 'water');
+
+    saveDemoStory('banquet');
+    assert.equal(loadDemoStory(), 'banquet');
+  } finally {
+    if (prevStorage === undefined) delete (globalThis as { localStorage?: Storage }).localStorage;
+    else (globalThis as { localStorage?: Storage }).localStorage = prevStorage;
   }
 });
 

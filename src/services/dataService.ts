@@ -268,12 +268,12 @@ export function resetToDemoSeedState(): OpsDatabaseState {
   return fresh;
 }
 
-/** Which sample business the demo shows. A demo saved before stories existed is the water story. */
+/** Which sample business the demo shows. Defaults to DEFAULT_DEMO_STORY when no story choice is saved. */
 export function loadDemoStory(): DemoStoryId {
   try {
     const raw = localStorage.getItem(DEMO_STORY_KEY);
     if (isDemoStoryId(raw)) return raw;
-    return localStorage.getItem(DEMO_STATE_KEY) ? 'water' : DEFAULT_DEMO_STORY;
+    return DEFAULT_DEMO_STORY;
   } catch {
     return DEFAULT_DEMO_STORY;
   }
