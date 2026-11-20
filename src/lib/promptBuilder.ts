@@ -862,14 +862,44 @@ export function deanonymizeMeditateResponse(
   referenceDateIso: string = new Date().toISOString().slice(0, 10)
 ): any {
   const parsed = structuredClone(rawParsed || {});
+  const ownerEntry = dir.entries.find(
+    (e) => e.authorityLevel === 'OWNER' || e.authorityLevel === 'BOSS'
+  );
+  const ownerLang = ownerEntry?.preferredLanguage;
+
   parsed.chatReplyToBoss = restoreDisplayNamesFromSlots(stripNonOwnerSalutation(parsed.chatReplyToBoss, dir), dir);
+  if (ownerLang && parsed.chatReplyToBoss) {
+    parsed.chatReplyToBoss = enforceRecipientLanguageAndScript({
+      text: parsed.chatReplyToBoss,
+      language: ownerLang,
+      fallbackText:
+        ownerLang === 'HINDI'
+          ? 'टास्क ड्राफ्ट तैयार हैं — भेजने से पहले जांच लें।'
+          : ownerLang === 'HINGLISH'
+            ? 'Tasks draft ho gaye hain — bhejne se pehle check kar lein.'
+            : 'Draft tasks are ready for your review.',
+    });
+  }
   parsed.reasoningSummary = restoreDisplayNamesFromSlots(parsed.reasoningSummary, dir);
   parsed.agendaTitle = restoreDisplayNamesFromSlots(parsed.agendaTitle, dir);
 
   if (parsed.v2Intent && typeof parsed.v2Intent === 'object') {
+    let intentReply = restoreDisplayNamesFromSlots(stripNonOwnerSalutation(parsed.v2Intent.replyToOwner, dir), dir);
+    if (ownerLang && intentReply) {
+      intentReply = enforceRecipientLanguageAndScript({
+        text: intentReply,
+        language: ownerLang,
+        fallbackText:
+          ownerLang === 'HINDI'
+            ? 'समझ गया, कृपया आगे की जानकारी बताएं।'
+            : ownerLang === 'HINGLISH'
+              ? 'Samajh gaya, kripya aage ki details batayein.'
+              : 'Got it — please share the details.',
+      });
+    }
     parsed.v2Intent = {
       ...parsed.v2Intent,
-      replyToOwner: restoreDisplayNamesFromSlots(stripNonOwnerSalutation(parsed.v2Intent.replyToOwner, dir), dir),
+      replyToOwner: intentReply,
       missingCritical: Array.isArray(parsed.v2Intent.missingCritical)
         ? parsed.v2Intent.missingCritical.map((m: string) => restoreDisplayNamesFromSlots(m, dir))
         : [],

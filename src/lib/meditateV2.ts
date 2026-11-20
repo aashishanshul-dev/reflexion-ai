@@ -10,6 +10,7 @@ import type {
   MeditateV2Lane,
   MeditateV2RouteOutcome,
   OwnerProfileConfig,
+  PreferredLanguage,
   PrincipalPrompts,
   Quadrant,
   RecurrenceRule,
@@ -42,8 +43,117 @@ import {
   OWNER_EDIT_REFINEMENT_RULES,
 } from './promptBuilder.ts';
 import { PLAN_ORDER_RULES } from './planOrder.ts';
+import { enforceRecipientLanguageAndScript } from './staffEscalation.ts';
 
 export const DEFAULT_INTENT_CONFIDENCE_THRESHOLD = 0.75;
+
+/** Resolves the owner's single preferred language for Meditate replies & welcome copy. */
+export function resolveOwnerPreferredLanguage(
+  teamMembers?: TeamMember[] | Record<string, TeamMember>,
+  ownerProfile?: OwnerProfileConfig,
+  businessProfile?: BusinessProfileConfig
+): PreferredLanguage {
+  const list = Array.isArray(teamMembers)
+    ? teamMembers
+    : Object.values(teamMembers || {});
+  const owners = list.filter((m) => m.authorityLevel === 'OWNER' || m.authorityLevel === 'BOSS');
+  const configured = ownerProfile?.defaultAccountablePhone
+    ? owners.find((m) => m.phone === ownerProfile.defaultAccountablePhone)
+    : undefined;
+  const owner = configured || owners[0];
+  return owner?.preferredLanguage || businessProfile?.defaultStaffLanguage || 'ENGLISH';
+}
+
+/** Simple, jargon-free Meditate welcome message in the owner's preferred language. */
+export function buildMeditateWelcomeMessage(
+  ownerLanguage: PreferredLanguage,
+  businessName?: string | null
+): string {
+  const biz = typeof businessName === 'string' && businessName.trim() ? businessName.trim() : '';
+  if (ownerLanguage === 'HINDI') {
+    return biz
+      ? `नमस्ते — बताइए ${biz} में क्या काम करवाना है, मैं उसे आपकी टीम के लिए साफ़ कार्यों में बदल दूँगा।`
+      : 'नमस्ते — बताइए क्या काम करवाना है, मैं उसे आपकी टीम के लिए साफ़ कार्यों में बदल दूँगा।';
+  }
+  if (ownerLanguage === 'HINGLISH') {
+    return biz
+      ? `Namaste — bataiye ${biz} mein kya kaam karwana hai, main use aapki team ke liye clear tasks mein badal dunga.`
+      : 'Namaste — bataiye kya kaam karwana hai, main use aapki team ke liye clear tasks mein badal dunga.';
+  }
+  return biz
+    ? `Hi — tell me what needs doing at ${biz} and I'll turn it into tasks for your team.`
+    : "Hi — tell me what needs doing and I'll turn it into tasks for your team.";
+}
+
+function ownerReplyFallback(
+  ownerLanguage: PreferredLanguage,
+  kind: 'CLARIFY' | 'CONFIRM' | 'NOTE' | 'RULE' | 'QUESTION' | 'CASUAL' | 'PLAN'
+): string {
+  if (ownerLanguage === 'HINDI') {
+    switch (kind) {
+      case 'CLARIFY':
+        return 'इसे सेट करने से पहले, कृपया छूटी हुई जानकारी बता दें?';
+      case 'CONFIRM':
+        return 'कृपया बताएं कि इसे कैसे संभालना है?';
+      case 'NOTE':
+        return 'यह नोट आपके नोट्स में सहेज लिया गया है।';
+      case 'RULE':
+        return 'यह नियम आपकी समीक्षा के लिए सहेजा गया है।';
+      case 'QUESTION':
+        return 'मौजूदा बोर्ड या टीम डेटा में इसका उत्तर उपलब्ध नहीं है।';
+      case 'CASUAL':
+        return 'ठीक है, समझ गया।';
+      case 'PLAN':
+        return 'टास्क ड्राफ्ट तैयार हैं — भेजने से पहले जांच लें।';
+    }
+  }
+  if (ownerLanguage === 'HINGLISH') {
+    switch (kind) {
+      case 'CLARIFY':
+        return 'Ise set karne se pehle, kripya missing details confirm kar dein?';
+      case 'CONFIRM':
+        return 'Kripya batayein ise kaise handle karna hai?';
+      case 'NOTE':
+        return 'Yeh note aapki Notes list mein save kar liya gaya hai.';
+      case 'RULE':
+        return 'Yeh rule aapke review ke liye add kar diya gaya hai.';
+      case 'QUESTION':
+        return 'Abhi ke board ya team data mein iska jawab nahi mila.';
+      case 'CASUAL':
+        return 'Theek hai, samajh gaya.';
+      case 'PLAN':
+        return 'Tasks draft ho gaye hain — bhejne se pehle check kar lein.';
+    }
+  }
+  switch (kind) {
+    case 'CLARIFY':
+      return 'Could you share the missing details before I set this up?';
+    case 'CONFIRM':
+      return 'How would you like me to handle this?';
+    case 'NOTE':
+      return 'Saved this to your Notes list.';
+    case 'RULE':
+      return 'Added as a pending rule for your review.';
+    case 'QUESTION':
+      return "I don't have enough information in the current board or team data to answer that.";
+    case 'CASUAL':
+      return 'Understood.';
+    case 'PLAN':
+      return 'Draft tasks are ready for your review.';
+  }
+}
+
+export function normalizeOwnerMeditateReply(
+  text: string | undefined | null,
+  ownerLanguage: PreferredLanguage,
+  kind: 'CLARIFY' | 'CONFIRM' | 'NOTE' | 'RULE' | 'QUESTION' | 'CASUAL' | 'PLAN' = 'PLAN'
+): string {
+  return enforceRecipientLanguageAndScript({
+    text: String(text || ''),
+    language: ownerLanguage,
+    fallbackText: ownerReplyFallback(ownerLanguage, kind),
+  });
+}
 
 export const MEDITATE_CONFIRM_CHIPS: MeditateConfirmChip[] = [
   { label: 'Make it a task', kind: 'TASK' },
@@ -87,7 +197,8 @@ export function resolveIntentConfidenceThreshold(threshold?: number | null): num
  */
 export function buildCombinedClarifyingQuestion(
   missingCritical: string[],
-  modelReply?: string | null
+  modelReply?: string | null,
+  ownerLanguage: PreferredLanguage = 'ENGLISH'
 ): string {
   const cleanedItems = (missingCritical || [])
     .map((m) => String(m || '').trim().replace(/[?.!]+$/, ''))
@@ -96,24 +207,38 @@ export function buildCombinedClarifyingQuestion(
   const trimmedReply = typeof modelReply === 'string' ? modelReply.trim() : '';
   const questionMarkCount = (trimmedReply.match(/\?/g) || []).length;
 
-  // If the model already produced a single concise question, preserve it
+  // If the model already produced a single concise question in the right script, preserve it
   if (trimmedReply && questionMarkCount === 1) {
-    return trimmedReply;
+    return normalizeOwnerMeditateReply(trimmedReply, ownerLanguage, 'CLARIFY');
   }
 
   if (cleanedItems.length === 0) {
-    return trimmedReply
+    const raw = trimmedReply
       ? `${trimmedReply.replace(/[?.!]+$/, '')}?`
-      : 'Could you share the missing details needed before staging this task?';
+      : ownerReplyFallback(ownerLanguage, 'CLARIFY');
+    return normalizeOwnerMeditateReply(raw, ownerLanguage, 'CLARIFY');
   }
 
-  if (cleanedItems.length === 1) {
-    return `Before staging this task, could you confirm ${cleanedItems[0]}?`;
-  }
+  const joined =
+    cleanedItems.length === 1
+      ? cleanedItems[0]
+      : `${cleanedItems.slice(0, -1).join(', ')} and ${cleanedItems[cleanedItems.length - 1]}`;
 
-  const allButLast = cleanedItems.slice(0, -1).join(', ');
-  const last = cleanedItems[cleanedItems.length - 1];
-  return `Before staging this task, could you confirm ${allButLast} and ${last}?`;
+  if (ownerLanguage === 'HINDI') {
+    return normalizeOwnerMeditateReply(
+      `इसे सेट करने से पहले, कृपया ${joined} बता दें?`,
+      ownerLanguage,
+      'CLARIFY'
+    );
+  }
+  if (ownerLanguage === 'HINGLISH') {
+    return normalizeOwnerMeditateReply(
+      `Ise stage karne se pehle, kripya ${joined} confirm kar dein?`,
+      ownerLanguage,
+      'CLARIFY'
+    );
+  }
+  return `Before staging this task, could you confirm ${joined}?`;
 }
 
 /**
@@ -131,6 +256,7 @@ export function routeMeditateV2Intent(
   options?: {
     confidenceThreshold?: number | null;
     confirmedKind?: MeditateV2IntentKind | null;
+    ownerLanguage?: PreferredLanguage;
   }
 ): {
   route: MeditateV2RouteOutcome;
@@ -140,11 +266,18 @@ export function routeMeditateV2Intent(
 } {
   const threshold = resolveIntentConfidenceThreshold(options?.confidenceThreshold);
   const confirmedKind = options?.confirmedKind || null;
+  const ownerLang: PreferredLanguage = options?.ownerLanguage || 'ENGLISH';
 
   if (!confirmedKind && intent.confidence < threshold) {
+    const promptSuffix =
+      ownerLang === 'HINDI'
+        ? 'कृपया नीचे से चुनें कि इसे कैसे संभालना है:'
+        : ownerLang === 'HINGLISH'
+          ? 'Please neeche se choose karein ise kaise handle karna hai:'
+          : 'How would you like me to handle this?';
     const baseReply = intent.replyToOwner?.trim()
-      ? `${intent.replyToOwner.trim()}\n\nHow would you like me to handle this?`
-      : 'I want to make sure I handle this the way you intend — please choose an option below:';
+      ? `${normalizeOwnerMeditateReply(intent.replyToOwner.trim(), ownerLang, 'CONFIRM')}\n\n${promptSuffix}`
+      : ownerReplyFallback(ownerLang, 'CONFIRM');
     return {
       route: 'AWAIT_OWNER_CONFIRMATION',
       effectiveKind: intent.kind,
@@ -164,14 +297,14 @@ export function routeMeditateV2Intent(
         route: 'ASK_CLARIFYING_QUESTION',
         effectiveKind: 'TASK',
         confirmChips: [],
-        replyToOwner: buildCombinedClarifyingQuestion(missing, intent.replyToOwner),
+        replyToOwner: buildCombinedClarifyingQuestion(missing, intent.replyToOwner, ownerLang),
       };
     }
     return {
       route: 'RUN_PLANNER',
       effectiveKind: 'TASK',
       confirmChips: [],
-      replyToOwner: intent.replyToOwner || '',
+      replyToOwner: intent.replyToOwner ? normalizeOwnerMeditateReply(intent.replyToOwner, ownerLang, 'PLAN') : '',
     };
   }
 
@@ -180,8 +313,7 @@ export function routeMeditateV2Intent(
       route: 'SAVE_NOTE',
       effectiveKind: 'NOTE',
       confirmChips: [],
-      replyToOwner:
-        intent.replyToOwner?.trim() || 'Saved this to your Notes list in Meditate Studio.',
+      replyToOwner: normalizeOwnerMeditateReply(intent.replyToOwner, ownerLang, 'NOTE'),
     };
   }
 
@@ -190,9 +322,7 @@ export function routeMeditateV2Intent(
       route: 'STAGE_PENDING_RULE',
       effectiveKind: 'RULE',
       confirmChips: [],
-      replyToOwner:
-        intent.replyToOwner?.trim() ||
-        'Added as a pending rule (approved=false). You can review and approve it in AI Brain & Setup → System Memory.',
+      replyToOwner: normalizeOwnerMeditateReply(intent.replyToOwner, ownerLang, 'RULE'),
     };
   }
 
@@ -201,9 +331,7 @@ export function routeMeditateV2Intent(
       route: 'ANSWER_QUESTION',
       effectiveKind: 'QUESTION',
       confirmChips: [],
-      replyToOwner:
-        intent.replyToOwner?.trim() ||
-        "I don't have enough information in the current board or team data to answer that.",
+      replyToOwner: normalizeOwnerMeditateReply(intent.replyToOwner, ownerLang, 'QUESTION'),
     };
   }
 
@@ -211,7 +339,7 @@ export function routeMeditateV2Intent(
     route: 'CASUAL_REPLY',
     effectiveKind: 'CASUAL',
     confirmChips: [],
-    replyToOwner: intent.replyToOwner?.trim() || 'Understood.',
+    replyToOwner: normalizeOwnerMeditateReply(intent.replyToOwner, ownerLang, 'CASUAL'),
   };
 }
 
@@ -734,6 +862,17 @@ export function buildAnonymizedIntentPrompt(params: {
 
   const validSlotList = slotDirectory.entries.map((e) => e.slotId).join(', ') || 'P1';
   const mustKnowLines = buildMustKnowFactLines(params.categorySops || [], slotDirectory);
+  const ownerLang = resolveOwnerPreferredLanguage(
+    params.teamMembers,
+    params.ownerProfile,
+    params.businessProfile
+  );
+  const ownerScriptRule =
+    ownerLang === 'HINDI'
+      ? 'HINDI in Devanagari script ONLY (never Roman Hindi or English).'
+      : ownerLang === 'HINGLISH'
+        ? 'HINGLISH in Roman script ONLY (never Devanagari characters).'
+        : 'ENGLISH in Roman script ONLY (never Hindi or Devanagari).';
 
   const systemInstruction = `You are the Meditate v2 Semantic Intent Gate for an operations command center (Prompt Version ${PROMPT_VERSION}).
 Classify the owner's message strictly by semantic meaning — NEVER use word count or message length heuristics.
@@ -758,7 +897,8 @@ NO HALLUCINATION / STRICT GROUNDING:
 CONFIDENCE & SLOT PRIVACY:
 - Set "confidence" between 0.0 and 1.0 reflecting how unambiguous the owner's intent kind is. If the message could reasonably be interpreted in multiple ways (e.g. an observation that might be a note OR an implicit repair request), set confidence below 0.75.
 - Team identities are anonymized as Slot IDs (${validSlotList}). Refer to team members ONLY via Slot placeholders like {{P1}}, {{P2}} and NEVER output phone numbers.
-- ${buildOwnerReaderLine(slotDirectory)}`;
+- ${buildOwnerReaderLine(slotDirectory)}
+- OWNER LANGUAGE & SCRIPT: Write "replyToOwner" strictly in ${ownerScriptRule} Never switch languages or scripts mid-session.`;
 
   const historyCapped = capConversationHistory(
     params.conversationHistory || [],
@@ -874,6 +1014,17 @@ export function buildAnonymizedPlannerPrompt(params: {
   const validCategoryList =
     (params.categorySops || []).map((c) => c.categoryId).join(', ') || 'AD_HOC';
   const validSlotList = slotDirectory.entries.map((e) => e.slotId).join(', ') || 'P1';
+  const ownerLang = resolveOwnerPreferredLanguage(
+    params.teamMembers,
+    params.ownerProfile,
+    params.businessProfile
+  );
+  const ownerScriptRule =
+    ownerLang === 'HINDI'
+      ? 'HINDI in Devanagari script ONLY (never Roman Hindi or English).'
+      : ownerLang === 'HINGLISH'
+        ? 'HINGLISH in Roman script ONLY (never Devanagari characters).'
+        : 'ENGLISH in Roman script ONLY (never Hindi or Devanagari).';
 
   const basePlanningDirective = scrubPiiToSlots(
     params.principalPrompts?.planningPrompt ||
@@ -911,6 +1062,7 @@ STRICT ANONYMIZED SLOT IDENTITY:
 - Output ONLY valid Slot IDs in raci.R, raci.A, raci.C, raci.I, and wbsHeads[].involvedPhones.
 - ${ACCOUNTABLE_SELECTION_RULE}
 - ${buildOwnerReaderLine(slotDirectory)}
+- OWNER LANGUAGE & SCRIPT: Write "chatReplyToBoss" strictly in ${ownerScriptRule} Never switch languages or scripts mid-session.
 - Use valid categoryIds (${validCategoryList}).
 - Refer to teammates in text fields ONLY via {{P1}}, {{P2}} placeholders and NEVER output phone numbers.
 - Include an "assignmentReason" on every drafted task (see RESPONSIBLE (R) SELECTION ORDER), using {{P1}} placeholders for any teammate.

@@ -26,6 +26,7 @@ import {
   buildV2NonPlannerResponse,
   hydratePlannerDefaults,
   resolveIntentConfidenceThreshold,
+  resolveOwnerPreferredLanguage,
   routeMeditateV2Intent,
 } from './src/lib/meditateV2.ts';
 import {
@@ -494,10 +495,12 @@ async function handleMeditateV2Request(params: {
       replyToOwner: '',
       ruleCategory: confirmedIntentKind === 'RULE' ? 'BUSINESS_RULE' : null,
     };
-    const routed = routeMeditateV2Intent(syntheticIntent, {
-      confidenceThreshold,
-      confirmedKind: confirmedIntentKind,
-    });
+  const ownerLanguage = resolveOwnerPreferredLanguage(teamMembers, ownerProfile, businessProfile);
+  const routed = routeMeditateV2Intent(syntheticIntent, {
+    confidenceThreshold,
+    confirmedKind: confirmedIntentKind,
+    ownerLanguage,
+  });
     const nonPlanner = buildV2NonPlannerResponse({
       route: routed.route as Exclude<MeditateV2RouteOutcome, 'RUN_PLANNER'>,
       intent: syntheticIntent,
@@ -532,6 +535,7 @@ async function handleMeditateV2Request(params: {
     const routed = routeMeditateV2Intent(syntheticTaskMissing, {
       confidenceThreshold,
       confirmedKind: 'TASK',
+      ownerLanguage: resolveOwnerPreferredLanguage(teamMembers, ownerProfile, businessProfile),
     });
     const nonPlanner = buildV2NonPlannerResponse({
       route: 'ASK_CLARIFYING_QUESTION',
@@ -741,6 +745,7 @@ async function handleMeditateV2Request(params: {
     // Deterministic routing on validated INTENT output
     const routed = routeMeditateV2Intent(validatedIntent, {
       confidenceThreshold,
+      ownerLanguage: resolveOwnerPreferredLanguage(teamMembers, ownerProfile, businessProfile),
     });
 
     if (routed.route !== 'RUN_PLANNER') {

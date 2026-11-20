@@ -80,6 +80,11 @@ import {
 import { DraftTaskEditor } from './DraftTaskEditor';
 import { summarizeWbsHeadRelease } from '../lib/releaseEngine';
 import { runMeditateAgentApi } from '../services/dataService';
+import {
+  buildMeditateWelcomeMessage,
+  normalizeOwnerMeditateReply,
+  resolveOwnerPreferredLanguage,
+} from '../lib/meditateV2';
 import { useVoiceRecorder } from '../lib/useVoiceRecorder';
 import {
   buildValidationFailureClarification,
@@ -189,14 +194,29 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
     }
   }, [state.wbs_heads]);
 
+  const ownerLanguage = useMemo(
+    () =>
+      resolveOwnerPreferredLanguage(
+        state.team_members,
+        state.owner_profile,
+        state.business_profile
+      ),
+    [state.team_members, state.owner_profile, state.business_profile]
+  );
+
   // Chat conversation state
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'init-1',
       role: 'assistant',
-      text: state.business_profile?.businessName
-        ? `Namaste! Tell me what needs doing at ${state.business_profile.businessName} — by voice or text, in Hindi, Hinglish or English. I will turn it into tasks with the right person, steps and a time, and ask one short question if something is missing.`
-        : 'Namaste! Tell me what needs doing — by voice or text, in Hindi, Hinglish or English. I will turn it into tasks with the right person, steps and a time, and ask one short question if something is missing.',
+      text: buildMeditateWelcomeMessage(
+        resolveOwnerPreferredLanguage(
+          state.team_members,
+          state.owner_profile,
+          state.business_profile
+        ),
+        state.business_profile?.businessName
+      ),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -381,7 +401,22 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
       ? (clientValidation.normalizedPlan as MeditateAiResponse)
       : buildValidationFailureClarification(clientValidation.issues);
 
-    const replyText = safeAiRes.chatReplyToBoss || safeAiRes.reasoningSummary;
+    const rawReplyText = safeAiRes.chatReplyToBoss || safeAiRes.reasoningSummary;
+    const replyKind =
+      safeAiRes.v2Route === 'ASK_CLARIFYING_QUESTION'
+        ? 'CLARIFY'
+        : safeAiRes.v2Route === 'AWAIT_OWNER_CONFIRMATION'
+          ? 'CONFIRM'
+          : safeAiRes.v2Route === 'SAVE_NOTE'
+            ? 'NOTE'
+            : safeAiRes.v2Route === 'STAGE_PENDING_RULE'
+              ? 'RULE'
+              : safeAiRes.v2Route === 'ANSWER_QUESTION'
+                ? 'QUESTION'
+                : safeAiRes.v2Route === 'CASUAL_REPLY'
+                  ? 'CASUAL'
+                  : 'PLAN';
+    const replyText = normalizeOwnerMeditateReply(rawReplyText, ownerLanguage, replyKind);
     const tasksCount = Array.isArray(safeAiRes.draftedTasks) ? safeAiRes.draftedTasks.length : 0;
 
     const assistantMsg: ChatMessage = {
