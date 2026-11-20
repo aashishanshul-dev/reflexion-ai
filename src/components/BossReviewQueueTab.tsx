@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { OpsDatabaseState } from '../types/ops';
 import { findBehindTasksInProject } from '../lib/behindAlerts';
+import { bossReviewTypeLabel, SECTION_EXPLAINERS } from '../lib/plainLabels';
 import { BrandEmptyState } from './BrandLogo';
 
 interface BossReviewQueueTabProps {
@@ -45,10 +46,10 @@ export const BossReviewQueueTab: React.FC<BossReviewQueueTabProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-hairline pb-5">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-ink font-display">
-            Boss Review &amp; Approvals
+            Boss Reviews
           </h2>
           <p className="mt-1 text-sm text-slate">
-            High-authority escalation queue for budget variations, design decisions, and partial handovers. Automatic pestering is paused while in review.
+            {SECTION_EXPLAINERS.bossReviews}
           </p>
         </div>
 
@@ -115,7 +116,7 @@ export const BossReviewQueueTab: React.FC<BossReviewQueueTabProps> = ({
                     </span>
 
                     <span className="inline-flex items-center rounded-md border border-danger-border bg-danger-soft px-2 py-0.5 text-xs font-medium text-danger">
-                      {item.reviewType.replace(/_/g, ' ')}
+                      {bossReviewTypeLabel(item.reviewType)}
                     </span>
 
                     <span className="inline-flex items-center gap-1.5 text-ink font-medium">

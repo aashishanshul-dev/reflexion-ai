@@ -12,14 +12,15 @@ import {
 } from '../types/ops';
 import { applyDraftEdit, DraftEditPatch, generateDraftMessage, moveStep } from '../lib/draftEditing';
 import { formatDueLabel } from '../lib/taskTiming';
+import { QUADRANT_OPTION_LABELS, RACI_ROLE_LABELS, SECTION_EXPLAINERS } from '../lib/plainLabels';
 import { DraftIssue } from '../lib/validator';
 import { DraftReleasePicker } from './DraftReleasePicker';
 
 const QUADRANT_OPTIONS: Array<{ id: Quadrant; label: string }> = [
-  { id: 'Q1_DO_FIRST', label: 'Q1 Urgent & Important' },
-  { id: 'Q2_SCHEDULE', label: 'Q2 Important (Schedule)' },
-  { id: 'Q3_DELEGATE', label: 'Q3 Urgent (Delegate)' },
-  { id: 'Q4_LOW', label: 'Q4 Routine / Low' },
+  { id: 'Q1_DO_FIRST', label: QUADRANT_OPTION_LABELS.Q1_DO_FIRST },
+  { id: 'Q2_SCHEDULE', label: QUADRANT_OPTION_LABELS.Q2_SCHEDULE },
+  { id: 'Q3_DELEGATE', label: QUADRANT_OPTION_LABELS.Q3_DELEGATE },
+  { id: 'Q4_LOW', label: QUADRANT_OPTION_LABELS.Q4_LOW },
 ];
 const DURATION_OPTIONS = [0.5, 1, 1.5, 2, 3, 4, 5, 7];
 
@@ -268,7 +269,7 @@ export const DraftTaskEditor: React.FC<DraftTaskEditorProps> = ({
             </div>
             <p className="text-sm font-bold text-ink break-words">{draft.title || 'Untitled task'}</p>
             <p className="text-[11px] text-slate tabular-nums">
-              Responsible: <strong className="text-ink">{nameOf(draft.raci?.R) || 'not chosen'}</strong> · Due {formatDueLabel(draft)}
+              {RACI_ROLE_LABELS.R}: <strong className="text-ink">{nameOf(draft.raci?.R) || 'not chosen'}</strong> · Due {formatDueLabel(draft)}
               {draft.dueDateAssumed ? (
                 <span className="ml-1 rounded bg-warning-soft border border-warning-border px-1 py-0.2 text-[10px] font-semibold text-warning">
                   assumed
@@ -379,7 +380,7 @@ export const DraftTaskEditor: React.FC<DraftTaskEditorProps> = ({
         )}
 
         <div>
-          <label className={labelClass} htmlFor={`${draft.tempId}-r`}>Responsible (R)</label>
+          <label className={labelClass} htmlFor={`${draft.tempId}-r`} title={SECTION_EXPLAINERS.raci}>{RACI_ROLE_LABELS.R}</label>
           <select id={`${draft.tempId}-r`} className={inputClass} value={form.R} onChange={(e) => set('R', e.target.value)}>
             <option value="">— choose —</option>
             {members.map((m) => (
@@ -388,7 +389,7 @@ export const DraftTaskEditor: React.FC<DraftTaskEditorProps> = ({
           </select>
         </div>
         <div>
-          <label className={labelClass} htmlFor={`${draft.tempId}-a`}>Accountable (A)</label>
+          <label className={labelClass} htmlFor={`${draft.tempId}-a`} title={SECTION_EXPLAINERS.raci}>{RACI_ROLE_LABELS.A}</label>
           <select id={`${draft.tempId}-a`} className={inputClass} value={form.A} onChange={(e) => set('A', e.target.value)}>
             <option value="">— none —</option>
             {members.map((m) => (
@@ -398,7 +399,7 @@ export const DraftTaskEditor: React.FC<DraftTaskEditorProps> = ({
         </div>
         {(['C', 'I'] as const).map((key) => (
           <fieldset key={key}>
-            <legend className={labelClass}>{key === 'C' ? 'Consulted (C)' : 'Informed (I)'}</legend>
+            <legend className={labelClass}>{RACI_ROLE_LABELS[key]}</legend>
             <div className="flex flex-wrap gap-1.5">
               {members.map((m) => {
                 const on = form[key].includes(m.phone);

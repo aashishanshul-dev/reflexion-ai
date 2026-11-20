@@ -24,6 +24,7 @@ import {
   TeamNode,
 } from '../lib/teamGraph';
 import { BrandEmptyState } from './BrandLogo';
+import { SECTION_EXPLAINERS } from '../lib/plainLabels';
 import { EditableLinkKind, TeamOrgCanvas } from './TeamOrgCanvas';
 import {
   AddPersonModal,
@@ -325,7 +326,7 @@ export const TeamViewTab: React.FC<TeamViewTabProps> = ({
   const capPct = Math.min(100, Math.round(capacity.utilization * 100));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-x-hidden">
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -333,7 +334,7 @@ export const TeamViewTab: React.FC<TeamViewTabProps> = ({
             Team
           </h1>
           <p className="text-xs text-slate mt-0.5">
-            Drag cards to arrange, drag handles to link people, or click a person to edit.
+            {SECTION_EXPLAINERS.team}
           </p>
         </div>
 
@@ -557,7 +558,7 @@ export const TeamViewTab: React.FC<TeamViewTabProps> = ({
                     <div className="min-w-0">
                       <div className="truncate text-xs font-bold text-ink font-display">
                         {n.depth > 0 && (
-                          <span className="mr-1.5 text-slate font-normal">&rdsh;</span>
+                          <span className="mr-1.5 text-slate font-normal">↳</span>
                         )}
                         {n.name}
                       </div>

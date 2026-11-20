@@ -70,7 +70,7 @@ export const DemoSandboxBar: React.FC<DemoSandboxBarProps> = ({
             id="demo-story-switch"
             value={story.id}
             onChange={(e) => onSwitchStory(e.target.value as DemoStoryId)}
-            className="max-w-[16rem] truncate rounded-lg border border-hairline bg-surface px-2 py-1 text-xs font-medium text-ink focus:border-signal focus:outline-none"
+            className="max-w-full sm:max-w-[16rem] truncate rounded-lg border border-hairline bg-surface px-2 py-1 text-xs font-medium text-ink focus:border-signal focus:outline-none"
             title="Switch the sample business (starts it fresh)"
           >
             {DEMO_STORY_IDS.map((id) => (
@@ -85,7 +85,7 @@ export const DemoSandboxBar: React.FC<DemoSandboxBarProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
           <button
             type="button"
             onClick={() => setOpenPanel((p) => (p === 'STORY' ? 'NONE' : 'STORY'))}

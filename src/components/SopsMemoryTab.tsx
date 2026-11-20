@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import { DemoVisitorsPanel } from './DemoVisitorsPanel';
+import { SECTION_EXPLAINERS } from '../lib/plainLabels';
 import {
   AiModelTuningConfig,
   BusinessProfileConfig,
@@ -439,7 +440,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
               AI Brain &amp; Setup
             </h1>
             <p className="text-xs text-slate mt-0.5">
-              Configure your business profile, personal delegation style, task splitting rules, sample brain-dumps, department SOPs, and memory. Every change saves immediately.
+              {SECTION_EXPLAINERS.aiBrain}
             </p>
             {onOpenImport && (
               <button
@@ -638,9 +639,9 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                   }
                   className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-xs text-ink focus:border-signal focus:outline-none"
                 >
-                  <option value="HINGLISH">HINGLISH (Roman Hindi)</option>
-                  <option value="HINDI">HINDI</option>
-                  <option value="ENGLISH">ENGLISH</option>
+                  <option value="HINGLISH">Hinglish (Roman Hindi)</option>
+                  <option value="HINDI">Hindi (Devanagari)</option>
+                  <option value="ENGLISH">English</option>
                 </select>
               </div>
             </div>
@@ -786,10 +787,10 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-ink mb-1">
-                  Who is Accountable (A) by Default?
+                  Who answers for tasks by default?
                 </label>
                 <p className="text-[11px] text-slate mb-2">
-                  Select the Owner or a Manager/Supervisor who signs off on tasks by default in the RACI matrix.
+                  Select the Owner or a Manager/Supervisor who signs off on tasks by default.
                 </p>
                 <select
                   value={ownerProfile.defaultAccountablePhone}
@@ -799,7 +800,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                   {(accountableCandidates.length > 0 ? accountableCandidates : membersList).map(
                     (m) => (
                       <option key={m.phone} value={m.phone}>
-                        [{m.slotId || 'Staff'}] {m.name} — {m.roleTitle} ({m.authorityLevel})
+                        {m.name} — {m.roleTitle}
                       </option>
                     )
                   )}

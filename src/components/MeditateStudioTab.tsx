@@ -22,6 +22,12 @@ import {
   Zap,
 } from 'lucide-react';
 import {
+  QUADRANT_OPTION_LABELS,
+  RACI_ROLE_LABELS,
+  SECTION_EXPLAINERS,
+  toFriendlyErrorMessage,
+} from '../lib/plainLabels';
+import {
   AiCallLogEntry,
   CategorySop,
   Classification,
@@ -719,7 +725,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
       const errMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        text: err?.message || 'Could not reach the Meditate Agent. Please try again.',
+        text: toFriendlyErrorMessage(err, 'Could not reach Meditate right now. Please try again.'),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errMsg]);
@@ -770,7 +776,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
       const errMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        text: `Error confirming intent: ${err?.message || 'Could not process confirmation.'}`,
+        text: toFriendlyErrorMessage(err, 'Could not process that choice right now. Please try again.'),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errMsg]);
@@ -1181,7 +1187,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
   };
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Top Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-4">
         <div>
@@ -1189,7 +1195,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
             Meditate &amp; Task Studio
           </h1>
           <p className="text-xs text-slate mt-0.5">
-            Say what needs doing. Meditate turns it into tasks, shows who does what and when, and sends them on WhatsApp after you approve.
+            {SECTION_EXPLAINERS.meditate}
           </p>
         </div>
 
@@ -1509,11 +1515,11 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="rounded-md bg-ink text-white px-2 py-0.5 text-[10px] font-mono font-bold">
-                                {head.headId}
+                              <span className="rounded-md bg-ink text-white px-2 py-0.5 text-[10px] font-bold">
+                                Project
                               </span>
                               <span className="rounded-md bg-paper border border-hairline text-ink px-2 py-0.5 text-[10px] font-semibold">
-                                {head.domainCategory}
+                                {state.category_sops.find((c) => c.categoryId === head.domainCategory)?.categoryName || 'Operations'}
                               </span>
                               {head.isForcedDeadline && (
                                 <span className="rounded-md bg-danger-soft text-danger border border-danger-border px-2 py-0.5 text-[10px] font-bold flex items-center gap-1 tabular-nums">
@@ -2132,23 +2138,23 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-ink mb-1">Quadrant</label>
+                <label className="block text-xs font-bold text-ink mb-1">Priority</label>
                 <select
                   value={quickQuadrant}
                   onChange={(e) => setQuickQuadrant(e.target.value as Quadrant)}
                   className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-xs text-ink focus:border-signal focus:outline-none"
                 >
-                  <option value="Q1_DO_FIRST">Q1 Urgent &amp; Important (Do First)</option>
-                  <option value="Q2_SCHEDULE">Q2 Important (Schedule)</option>
-                  <option value="Q3_DELEGATE">Q3 Urgent (Delegate)</option>
-                  <option value="Q4_LOW">Q4 Routine / Low</option>
+                  <option value="Q1_DO_FIRST">{QUADRANT_OPTION_LABELS.Q1_DO_FIRST}</option>
+                  <option value="Q2_SCHEDULE">{QUADRANT_OPTION_LABELS.Q2_SCHEDULE}</option>
+                  <option value="Q3_DELEGATE">{QUADRANT_OPTION_LABELS.Q3_DELEGATE}</option>
+                  <option value="Q4_LOW">{QUADRANT_OPTION_LABELS.Q4_LOW}</option>
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-ink mb-1">Responsible (R)</label>
+                <label className="block text-xs font-bold text-ink mb-1" title={SECTION_EXPLAINERS.raci}>{RACI_ROLE_LABELS.R}</label>
                 <select
                   value={quickR}
                   onChange={(e) => setQuickR(e.target.value)}

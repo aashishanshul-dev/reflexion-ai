@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Gavel, Send, Shie
 import { OpsDatabaseState, Task } from '../types/ops';
 import { describeFollowUpReason, FollowUpReason, MyTasksSummary } from '../lib/myTasks';
 import { formatTimestampInTimezone } from '../lib/releaseEngine';
+import { SECTION_EXPLAINERS, TASK_STATUS_LABELS } from '../lib/plainLabels';
 import { BrandEmptyState } from './BrandLogo';
 
 interface MyTasksTabProps {
@@ -16,12 +17,12 @@ interface MyTasksTabProps {
 }
 
 const STATUS_LABEL: Partial<Record<Task['status'], string>> = {
-  SCHEDULED: 'Scheduled',
-  LOCKED_BY_DEPENDENCY: 'Waiting on another task',
+  SCHEDULED: TASK_STATUS_LABELS.SCHEDULED,
+  LOCKED_BY_DEPENDENCY: TASK_STATUS_LABELS.LOCKED_BY_DEPENDENCY,
   PENDING: 'To start',
-  IN_PROGRESS: 'In progress',
-  PARTIALLY_DONE: 'Partly done',
-  AWAITING_BOSS_DECISION: 'Waiting for a decision',
+  IN_PROGRESS: TASK_STATUS_LABELS.IN_PROGRESS,
+  PARTIALLY_DONE: TASK_STATUS_LABELS.PARTIALLY_DONE,
+  AWAITING_BOSS_DECISION: TASK_STATUS_LABELS.AWAITING_BOSS_DECISION,
 };
 
 const REASON_CLASS: Record<FollowUpReason, string> = {
@@ -97,7 +98,11 @@ export const MyTasksTab: React.FC<MyTasksTabProps> = ({
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <Section title="Do" icon={ClipboardCheck} count={summary.counts.do} hint="Tasks where you are Responsible.">
+      <div className="border-b border-hairline pb-4">
+        <h2 className="text-xl font-bold tracking-tight text-ink font-display">My Tasks</h2>
+        <p className="mt-1 text-xs text-slate">{SECTION_EXPLAINERS.myTasks}</p>
+      </div>
+      <Section title="Do" icon={ClipboardCheck} count={summary.counts.do} hint="Tasks where you are doing the work.">
         {summary.do.length === 0 ? (
           <p className="text-xs text-slate">Nothing on your own plate right now.</p>
         ) : (

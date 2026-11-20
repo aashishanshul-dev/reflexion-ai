@@ -212,11 +212,6 @@ export const PersonSidePanel: React.FC<PersonSidePanelProps> = ({
             <h2 className="truncate text-sm font-bold text-ink font-display">
               {member.name}
             </h2>
-            {member.slotId && (
-              <span className="rounded bg-surface-muted border border-hairline px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate shrink-0">
-                {member.slotId}
-              </span>
-            )}
           </div>
           <p className="mt-0.5 truncate text-xs text-slate">
             +{member.phone} &middot; {openTaskCount} active task{openTaskCount === 1 ? '' : 's'}

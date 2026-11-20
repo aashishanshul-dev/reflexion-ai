@@ -890,7 +890,7 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
           {showVoicePresets && (
             <div className="absolute bottom-8 right-0 z-20 w-64 rounded-xl border border-hairline bg-surface p-2 shadow-[var(--shadow-modal)]">
               <div className="mb-1.5 flex items-center justify-between border-b border-hairline pb-1 text-xs font-semibold text-ink">
-                <span>Quick Voice Notes ({selectedMember?.slotId || 'Staff'})</span>
+                <span>Quick Voice Notes ({selectedMember?.name || 'Staff'})</span>
                 <button
                   type="button"
                   onClick={() => setShowVoicePresets(false)}

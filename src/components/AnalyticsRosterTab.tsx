@@ -596,18 +596,14 @@ export const AnalyticsRosterTab: React.FC<AnalyticsRosterTabProps> = ({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-ink text-white font-bold text-xs shadow-[var(--shadow-card)]">
-                        <span className="text-[10px] text-signal leading-none font-mono">{slotId}</span>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink text-white font-bold text-xs shadow-[var(--shadow-card)]">
                         <span className="leading-tight font-display">{initials}</span>
                       </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="rounded bg-signal-soft border border-signal-border px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-signal-ink">
-                            {slotId}
-                          </span>
                           <h4 className="text-sm font-bold text-ink font-display">{m.name}</h4>
                           <span className="rounded-md bg-paper border border-hairline px-2 py-0.5 text-[10px] font-semibold text-slate">
-                            {displayAuthority}
+                            {displayAuthority === 'OWNER' ? 'Owner' : displayAuthority === 'MANAGER' ? 'Manager' : displayAuthority === 'SUPERVISOR' ? 'Supervisor' : 'Staff'}
                           </span>
                         </div>
                         <p className="text-xs text-slate font-medium">{m.roleTitle}</p>

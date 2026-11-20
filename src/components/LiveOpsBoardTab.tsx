@@ -50,6 +50,13 @@ import {
   isTaskOnActiveBoard,
   isTaskReleasedStatus,
 } from '../lib/releaseEngine';
+import {
+  QUADRANT_LABELS,
+  QUADRANT_OPTION_LABELS,
+  RACI_ROLE_LABELS,
+  SECTION_EXPLAINERS,
+  TASK_STATUS_LABELS,
+} from '../lib/plainLabels';
 import { BrandEmptyState } from './BrandLogo';
 
 interface LiveOpsBoardTabProps {
@@ -76,25 +83,25 @@ const QUADRANT_CONFIG: Record<
   { label: string; badgeClass: string; dotClass: string; bgTint: string }
 > = {
   Q1_DO_FIRST: {
-    label: 'Do First',
+    label: QUADRANT_LABELS.Q1_DO_FIRST,
     badgeClass: 'bg-danger-soft text-danger border-danger-border',
     dotClass: 'bg-danger-solid',
     bgTint: 'bg-danger-soft/45',
   },
   Q2_SCHEDULE: {
-    label: 'Schedule',
+    label: QUADRANT_LABELS.Q2_SCHEDULE,
     badgeClass: 'bg-info-soft text-info border-info-border',
     dotClass: 'bg-info',
     bgTint: 'bg-info-soft/45',
   },
   Q3_DELEGATE: {
-    label: 'Delegate',
+    label: QUADRANT_LABELS.Q3_DELEGATE,
     badgeClass: 'bg-warn-soft text-warn border-warn-border',
     dotClass: 'bg-warn-solid',
     bgTint: 'bg-warn-soft/45',
   },
   Q4_LOW: {
-    label: 'Routine',
+    label: QUADRANT_LABELS.Q4_LOW,
     badgeClass: 'bg-surface-muted text-slate border-hairline-strong',
     dotClass: 'bg-slate',
     bgTint: 'bg-paper/80',
@@ -106,43 +113,43 @@ const STATUS_CONFIG: Record<
   { label: string; badgeClass: string }
 > = {
   STAGING_DRAFT: {
-    label: 'Draft',
+    label: TASK_STATUS_LABELS.STAGING_DRAFT,
     badgeClass: 'bg-surface-muted text-slate border-hairline-strong',
   },
   LOCKED_BY_DEPENDENCY: {
-    label: 'Waiting on Dependency',
+    label: TASK_STATUS_LABELS.LOCKED_BY_DEPENDENCY,
     badgeClass: 'bg-warn-soft text-warn border-warn-border',
   },
   SCHEDULED: {
-    label: 'Scheduled',
+    label: TASK_STATUS_LABELS.SCHEDULED,
     badgeClass: 'bg-info-soft text-info border-info-border',
   },
   PENDING: {
-    label: 'Queued',
+    label: TASK_STATUS_LABELS.PENDING,
     badgeClass: 'bg-info-soft text-info border-info-border',
   },
   IN_PROGRESS: {
-    label: 'In Progress',
+    label: TASK_STATUS_LABELS.IN_PROGRESS,
     badgeClass: 'bg-ok-soft text-ok border-ok-border',
   },
   PARTIALLY_DONE: {
-    label: 'Partially Done',
+    label: TASK_STATUS_LABELS.PARTIALLY_DONE,
     badgeClass: 'bg-ok-soft text-ok border-ok-border',
   },
   AWAITING_BOSS_DECISION: {
-    label: 'Boss Review',
+    label: TASK_STATUS_LABELS.AWAITING_BOSS_DECISION,
     badgeClass: 'bg-danger-soft text-danger border-danger-border',
   },
   COMPLETED: {
-    label: 'Completed',
+    label: TASK_STATUS_LABELS.COMPLETED,
     badgeClass: 'bg-ok-soft text-ok border-ok-border',
   },
   EXPIRED_MISSED: {
-    label: 'Missed',
+    label: TASK_STATUS_LABELS.EXPIRED_MISSED,
     badgeClass: 'bg-danger-soft text-danger border-danger-border',
   },
   CANCELLED: {
-    label: 'Cancelled',
+    label: TASK_STATUS_LABELS.CANCELLED,
     badgeClass: 'bg-surface-muted text-slate border-hairline-strong line-through',
   },
 };
@@ -539,15 +546,15 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Top Banner, Trigger Overview & View Switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-hairline pb-5">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-ink font-display">
-            Operations Workspace
+            Live Ops
           </h2>
           <p className="mt-1 text-xs text-slate">
-            Every task, who has it, when it is due, and where it stands.
+            {SECTION_EXPLAINERS.liveOps}
           </p>
         </div>
 
@@ -674,11 +681,11 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
               : 'border-hairline hover:border-warn-border'
           }`}
         >
-          <div className="text-xs font-medium text-slate">Waiting on Dependency</div>
+          <div className="text-xs font-medium text-slate">{TASK_STATUS_LABELS.LOCKED_BY_DEPENDENCY}</div>
           <div className="mt-1 text-2xl font-bold text-warn font-display tabular-nums">
             {kpis.locked}
           </div>
-          <div className="mt-0.5 text-[11px] text-slate/80">Awaiting prior handover</div>
+          <div className="mt-0.5 text-[11px] text-slate/80">Waiting for an earlier task</div>
         </button>
 
         <button
@@ -694,11 +701,11 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
               : 'border-hairline hover:border-danger-border'
           }`}
         >
-          <div className="text-xs font-medium text-slate">Boss Review</div>
+          <div className="text-xs font-medium text-slate">{TASK_STATUS_LABELS.AWAITING_BOSS_DECISION}</div>
           <div className="mt-1 text-2xl font-bold text-danger font-display tabular-nums">
             {kpis.awaitingBoss}
           </div>
-          <div className="mt-0.5 text-[11px] text-slate/80">SLA reminders paused</div>
+          <div className="mt-0.5 text-[11px] text-slate/80">Reminders paused</div>
         </button>
 
         <button
@@ -738,10 +745,10 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
             className="rounded-lg border border-hairline bg-paper px-3 py-1.5 text-xs text-ink focus:border-signal focus:bg-surface focus:outline-none"
           >
             <option value="ALL">All Priorities</option>
-            <option value="Q1_DO_FIRST">Do First (Urgent &amp; Important)</option>
-            <option value="Q2_SCHEDULE">Schedule (Important)</option>
-            <option value="Q3_DELEGATE">Delegate (Urgent)</option>
-            <option value="Q4_LOW">Routine (Low)</option>
+            <option value="Q1_DO_FIRST">{QUADRANT_OPTION_LABELS.Q1_DO_FIRST}</option>
+            <option value="Q2_SCHEDULE">{QUADRANT_OPTION_LABELS.Q2_SCHEDULE}</option>
+            <option value="Q3_DELEGATE">{QUADRANT_OPTION_LABELS.Q3_DELEGATE}</option>
+            <option value="Q4_LOW">{QUADRANT_OPTION_LABELS.Q4_LOW}</option>
           </select>
 
           <select
@@ -763,12 +770,12 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
             className="rounded-lg border border-hairline bg-paper px-3 py-1.5 text-xs text-ink focus:border-signal focus:bg-surface focus:outline-none"
           >
             <option value="ALL">All Statuses</option>
-            <option value="SCHEDULED">Scheduled (Held)</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="LOCKED_BY_DEPENDENCY">Waiting on Dependency</option>
-            <option value="AWAITING_BOSS_DECISION">Boss Review</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="PENDING">Queued</option>
+            <option value="SCHEDULED">{TASK_STATUS_LABELS.SCHEDULED}</option>
+            <option value="IN_PROGRESS">{TASK_STATUS_LABELS.IN_PROGRESS}</option>
+            <option value="LOCKED_BY_DEPENDENCY">{TASK_STATUS_LABELS.LOCKED_BY_DEPENDENCY}</option>
+            <option value="AWAITING_BOSS_DECISION">{TASK_STATUS_LABELS.AWAITING_BOSS_DECISION}</option>
+            <option value="COMPLETED">{TASK_STATUS_LABELS.COMPLETED}</option>
+            <option value="PENDING">{TASK_STATUS_LABELS.PENDING}</option>
             <option value="ARCHIVED">Archived ({archivedTasks.length})</option>
           </select>
         </div>
@@ -1627,10 +1634,10 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
                     onChange={(e) => setEditQuadrant(e.target.value as Quadrant)}
                     className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-xs text-ink focus:border-signal focus:outline-none"
                   >
-                    <option value="Q1_DO_FIRST">Q1 Do First</option>
-                    <option value="Q2_SCHEDULE">Q2 Schedule</option>
-                    <option value="Q3_DELEGATE">Q3 Delegate</option>
-                    <option value="Q4_LOW">Q4 Routine</option>
+                    <option value="Q1_DO_FIRST">{QUADRANT_OPTION_LABELS.Q1_DO_FIRST}</option>
+                    <option value="Q2_SCHEDULE">{QUADRANT_OPTION_LABELS.Q2_SCHEDULE}</option>
+                    <option value="Q3_DELEGATE">{QUADRANT_OPTION_LABELS.Q3_DELEGATE}</option>
+                    <option value="Q4_LOW">{QUADRANT_OPTION_LABELS.Q4_LOW}</option>
                   </select>
                 </div>
               </div>
@@ -1697,10 +1704,10 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
               </div>
 
               {/* RACI Selection */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-ink mb-1">
-                    Responsible (R)
+                  <label className="block text-xs font-bold text-ink mb-1" title={SECTION_EXPLAINERS.raci}>
+                    {RACI_ROLE_LABELS.R}
                   </label>
                   <select
                     value={editR}
@@ -1715,8 +1722,8 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-ink mb-1">
-                    Accountable (A)
+                  <label className="block text-xs font-bold text-ink mb-1" title={SECTION_EXPLAINERS.raci}>
+                    {RACI_ROLE_LABELS.A}
                   </label>
                   <select
                     value={editA}
