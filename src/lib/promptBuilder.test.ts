@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   buildAnonymizedBufferPrompt,
   buildAnonymizedMeditatePrompt,
+  buildAnonymizedMessageStagePrompt,
   buildSlotDirectory,
+  buildStaffLanguageDirective,
   capConversationHistory,
   createAiCallLog,
   deanonymizeBufferResponse,
@@ -17,6 +19,7 @@ import {
   verifyZeroPiiInPrompt,
 } from './promptBuilder';
 import { appendAiLogToState, applyProcessedBufferResult } from './opsEngine';
+import { buildShortTaskBrief } from './taskBrief';
 import { createInitialSeedState } from './seedData';
 import { InboundMessageBuffer, TeamMember, WbsHead } from '../types/ops';
 
@@ -501,5 +504,84 @@ test('GEN-05 regression: promptBuilder and SopsMemoryTab contain zero hard-coded
     const content = fs.readFileSync(path.resolve(process.cwd(), rel), 'utf-8');
     assert.equal(forbidden.test(content), false, `${rel} should not contain hard-coded GEN-05 industry words`);
   }
+});
+
+test('Staff language consistency: HINGLISH, HINDI, and ENGLISH directives cover full message, steps, and natural English nouns', () => {
+  const hinglish = buildStaffLanguageDirective('HINGLISH');
+  assert.match(hinglish, /HINGLISH in Roman script ONLY/);
+  assert.match(hinglish, /NEVER raw English sentences/i);
+  assert.match(hinglish, /everyday English nouns/i);
+
+  const hindi = buildStaffLanguageDirective('HINDI');
+  assert.match(hindi, /HINDI in Devanagari script ONLY/);
+  assert.match(hindi, /checklist steps/i);
+  assert.match(hindi, /everyday English nouns/i);
+
+  const english = buildStaffLanguageDirective('ENGLISH');
+  assert.match(english, /ENGLISH in Roman script ONLY/);
+
+  // Outbound brief prompt for a HINGLISH member rewrites title & steps into Hinglish
+  const seed = createInitialSeedState();
+  const nitin = Object.values(seed.team_members).find((m) => m.preferredLanguage === 'HINGLISH')!;
+  const task = seed.tasks.find((t) => t.raci.R === nitin.phone) || seed.tasks[0];
+  const outbound = buildAnonymizedMessageStagePrompt({
+    task: { ...task, raci: { ...task.raci, R: nitin.phone } },
+    teamMembers: Object.values(seed.team_members),
+    businessProfile: seed.business_profile,
+    ownerProfile: seed.owner_profile,
+  });
+  assert.match(outbound.systemInstruction, /Rewrite\/translate the TITLE and every CHECKLIST STEP into HINGLISH/);
+  assert.match(outbound.systemInstruction, /NEVER raw English sentences/i);
+
+  // Short brief formatter across HINGLISH, HINDI, ENGLISH
+  const hinglishBrief = buildShortTaskBrief(
+    {
+      taskCode: 'T-901',
+      shortTag: 'Dispatch Check',
+      title: 'Kal ka dispatch log check karo',
+      dueDate: '2026-11-21',
+      dueTime: '17:00',
+      taskFrequency: 'ONE_TIME',
+      recurrenceRule: 'NONE',
+      microSteps: ['Kal ka dispatch log check karo', 'Client offices ki list WhatsApp par share karo'],
+    },
+    { name: 'Nitin', addressAs: 'Nitin bhai', preferredLanguage: 'HINGLISH' }
+  );
+  assert.doesNotMatch(hinglishBrief, /[\u0900-\u097F]/); // zero Devanagari
+  assert.match(hinglishBrief, /dispatch log check karo/i);
+  assert.match(hinglishBrief, /list WhatsApp par share karo/i);
+
+  const hindiBrief = buildShortTaskBrief(
+    {
+      taskCode: 'T-902',
+      shortTag: 'डिस्पैच चेक',
+      title: 'कल का dispatch log चेक करें',
+      dueDate: '2026-11-21',
+      dueTime: '17:00',
+      taskFrequency: 'ONE_TIME',
+      recurrenceRule: 'NONE',
+      microSteps: ['कल का dispatch log चेक करें', 'Client offices की list WhatsApp पर भेजें'],
+    },
+    { name: 'Gopal', addressAs: 'गोपाल जी', preferredLanguage: 'HINDI' }
+  );
+  assert.match(hindiBrief, /[\u0900-\u097F]/);
+  assert.match(hindiBrief, /dispatch log/);
+  assert.match(hindiBrief, /WhatsApp/);
+
+  const englishBrief = buildShortTaskBrief(
+    {
+      taskCode: 'T-903',
+      shortTag: 'Dispatch Check',
+      title: 'Check yesterday dispatch log',
+      dueDate: '2026-11-21',
+      dueTime: '17:00',
+      taskFrequency: 'ONE_TIME',
+      recurrenceRule: 'NONE',
+      microSteps: ['Review yesterday dispatch log', 'Share client list with operations'],
+    },
+    { name: 'Alex', addressAs: 'Alex', preferredLanguage: 'ENGLISH' }
+  );
+  assert.match(englishBrief, /^Hello Alex/);
+  assert.doesNotMatch(englishBrief, /[\u0900-\u097F]/);
 });
 

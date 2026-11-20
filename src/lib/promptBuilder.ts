@@ -393,6 +393,16 @@ export function resolveSlotToPhone(
 /**
  * Replaces slot placeholders ({{P1}}, [P1], or standalone P1) with human display names for UI/WhatsApp output.
  */
+export function buildStaffLanguageDirective(lang: TeamMember['preferredLanguage']): string {
+  if (lang === 'HINDI') {
+    return 'HINDI in Devanagari script ONLY (never Roman Hindi or raw English sentences). The ENTIRE message — greeting, task instructions, checklist steps, clarifying questions, and sign-off — must be natural spoken Hindi in Devanagari. Keep everyday English nouns workers naturally use (photo, WhatsApp, list, office, report, update, bill, number, time, brands, proper names); translate all sentence structure and verbs into natural Hindi.';
+  }
+  if (lang === 'ENGLISH') {
+    return 'ENGLISH in Roman script ONLY (never Hindi or Devanagari). The ENTIRE message — greeting, task instructions, checklist steps, clarifying questions, and sign-off — must be clear, direct workplace English.';
+  }
+  return 'HINGLISH in Roman script ONLY (never Devanagari characters — e.g. "Theek hai ji", never "ठीक है"). The ENTIRE message — greeting, task instructions, checklist steps, clarifying questions, and sign-off — must be natural conversational Hinglish (e.g. "Kal ka dispatch log check karo", NEVER raw English sentences like "Review yesterday\'s dispatch log"). Keep everyday English nouns workers naturally use (photo, WhatsApp, list, office, report, confirmation, update, bill, number, time, brands, proper names); translate all sentence structure and verbs into Hinglish.';
+}
+
 const DEVANAGARI_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
 
 function toDigitAlternation(digits: string): string {
@@ -845,6 +855,7 @@ STRICT SLOT IDENTITY & SCHEMA DIRECTIVES (PROMPT VERSION ${PROMPT_VERSION}):
    - ${ACCOUNTABLE_SELECTION_RULE}
    - ${buildOwnerReaderLine(slotDirectory)}
    - In chatReplyToBoss, reasoningSummary, outboundWhatsappPreview, and assignmentReason, refer to teammates by their Slot ID placeholder (e.g. {{P1}}, {{P2}}) so the server can securely restore display names.
+   - STAFF MESSAGE & STEPS LANGUAGE: For every drafted task, write BOTH outboundWhatsappPreview AND microSteps in the assigned raci.R person's Language (HINGLISH = natural Hinglish in Roman script, e.g. "Kal ka dispatch log check karo"; HINDI = natural Hindi in Devanagari; ENGLISH = clear English). Translate sentence structure and verbs into that language while keeping everyday English nouns (photo, WhatsApp, list, office, report, update, bill, number, time, brands) natural.
    - Include an "assignmentReason" on every drafted task (see RESPONSIBLE (R) SELECTION ORDER).
    - Use valid categoryIds (${validCategoryList}) and concise human-friendly shortTag labels.
 
@@ -1167,12 +1178,7 @@ export function buildAnonymizedBufferPrompt(params: {
 
   const preferredLang =
     params.employee.preferredLanguage || bp?.defaultStaffLanguage || 'HINGLISH';
-  const scriptRule =
-    preferredLang === 'HINDI'
-      ? 'HINDI in Devanagari script ONLY (never Roman Hindi or English).'
-      : preferredLang === 'ENGLISH'
-        ? 'ENGLISH in Roman script ONLY (never Hindi or Devanagari).'
-        : 'HINGLISH in Roman script ONLY (never Devanagari characters — e.g. "Theek hai ji", never "ठीक है").';
+  const scriptRule = buildStaffLanguageDirective(preferredLang);
   const scrubbedPersona = scrubPiiToSlots(params.employee.personaPrompt || '', slotDirectory);
 
   const baseEvaluationPrompt = scrubPiiToSlots(
@@ -1361,15 +1367,17 @@ export function buildAnonymizedMessageStagePrompt(params: {
     .join('\n');
   const dueShort = formatDueShort(params.task) || params.task.dueDate;
 
+  const langDirective = buildStaffLanguageDirective(preferredLang);
   const systemInstruction = `You are OpsCommand AI's Release Message Writer (PROMPT VERSION ${PROMPT_VERSION}).
 Write a clear, natural, actionable WhatsApp task assignment message for teammate {{${rSlot}}}.
 STRICT RULES:
-1. Write strictly in ${preferredLang} matching this style note: "${personaStyle || 'Polite, clear, operational'}".
-2. Address the assignee ONLY via their slot placeholder {{${rSlot}}} (never invent names or phone numbers).
-3. Keep it short, like a message from a manager: line 1 = greeting, the exact bracketed tag [${scrubbedTag}], what to do and by when (${dueShort}); line 2 = the steps, numbered on one line; optional line 3 = one short closing ask (e.g. a photo when done).
-4. No form labels such as "Due Date:", "Checklist:", "Accountable:" or "Supervisor:". Do not name the supervisor.
-5. NEVER include raw phone numbers or raw task ticket codes like T-101 inside the message text.
-6. Return ONLY the ready-to-send WhatsApp message body (no markdown code fences, no preamble).`;
+1. ${langDirective}
+2. Rewrite/translate the TITLE and every CHECKLIST STEP into ${preferredLang} so the entire brief reads naturally in one voice — never paste raw English title/step sentences into a Hinglish or Hindi message. Match this style note: "${personaStyle || 'Polite, clear, operational'}".
+3. Address the assignee ONLY via their slot placeholder {{${rSlot}}} (never invent names or phone numbers).
+4. Keep it short, like a message from a manager: line 1 = greeting, the exact bracketed tag [${scrubbedTag}], what to do and by when (${dueShort}); line 2 = the steps, numbered on one line; optional line 3 = one short closing ask (e.g. a photo when done).
+5. No form labels such as "Due Date:", "Checklist:", "Accountable:" or "Supervisor:". Do not name the supervisor.
+6. NEVER include raw phone numbers or raw task ticket codes like T-101 inside the message text.
+7. Return ONLY the ready-to-send WhatsApp message body (no markdown code fences, no preamble).`;
 
   const userContent = `ASSIGNEE SLOT: {{${rSlot}}} (Role: ${rMember?.roleTitle || 'Team Member'}, Language: ${preferredLang})
 ${aSlot ? `SUPERVISOR SLOT: {{${aSlot}}} (${aMember?.roleTitle || 'Supervisor'})` : ''}

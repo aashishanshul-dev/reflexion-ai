@@ -1063,6 +1063,7 @@ STRICT ANONYMIZED SLOT IDENTITY:
 - ${ACCOUNTABLE_SELECTION_RULE}
 - ${buildOwnerReaderLine(slotDirectory)}
 - OWNER LANGUAGE & SCRIPT: Write "chatReplyToBoss" strictly in ${ownerScriptRule} Never switch languages or scripts mid-session.
+- STAFF MESSAGE & STEPS LANGUAGE: For every drafted task, write BOTH "outboundWhatsappPreview" AND "microSteps" in the assigned raci.R person's Language (HINGLISH = natural Hinglish in Roman script, e.g. "Kal ka dispatch log check karo", never raw English sentences; HINDI = natural Hindi in Devanagari; ENGLISH = clear English). Translate sentence structure and verbs into that language while keeping everyday English nouns (photo, WhatsApp, list, office, report, update, bill, number, time, brands) natural.
 - Use valid categoryIds (${validCategoryList}).
 - Refer to teammates in text fields ONLY via {{P1}}, {{P2}} placeholders and NEVER output phone numbers.
 - Include an "assignmentReason" on every drafted task (see RESPONSIBLE (R) SELECTION ORDER), using {{P1}} placeholders for any teammate.
