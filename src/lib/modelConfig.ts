@@ -33,7 +33,7 @@ export const ALL_MODEL_IDS: readonly string[] = [
 ];
 
 /** Bump when saved settings need a one-time migration in sanitizeModelTuning. */
-export const MODEL_DEFAULTS_VERSION = 6;
+export const MODEL_DEFAULTS_VERSION = 7;
 
 export type ModelTuningStageKey = 'meditate' | 'intent' | 'planner' | 'bufferEvaluation' | 'message';
 
@@ -48,8 +48,8 @@ export function defaultStageConfig(stage: ModelTuningStageKey): StageModelConfig
     case 'meditate':
     case 'planner':
       return {
-        model: GEMINI_MODELS.balanced,
-        fallbackModel: GEMINI_MODELS.fast,
+        model: GEMINI_MODELS.fast,
+        fallbackModel: GEMINI_MODELS.balanced,
         temperature: 0.2,
         // Flash and Pro think before answering and that counts against this limit;
         // 4096 cut a three-task plan off mid-JSON in a live check.
@@ -107,10 +107,12 @@ export function sanitizeModelTuning<T extends Partial<AiModelTuningConfig> | und
   // One-time migration (v5): planner stages saved with the old 4096-token limit and no
   // thinking cap get 8192 tokens and the capped thinking budget (a plan was cut off mid-JSON).
   const needsV5Migration = (tuning.modelDefaultsVersion ?? 0) < 5;
-  // One-time migration (v6): planner uses Flash as primary with Flash-Lite as backup
-  // (instead of Pro) for faster, more reliable fallback under the 45s cap.
+  // One-time migration (v6): planner moved off Pro fallback for faster fallback under 45s.
   const needsV6Migration = (tuning.modelDefaultsVersion ?? 0) < 6;
-  if (needsV6Migration) {
+  // One-time migration (v7): gemini-flash-lite-latest is primary for every stage
+  // (including planner/meditate), with gemini-flash-latest as backup.
+  const needsV7Migration = (tuning.modelDefaultsVersion ?? 0) < 7;
+  if (needsV7Migration) {
     next.modelDefaultsVersion = MODEL_DEFAULTS_VERSION;
     changed = true;
   }
@@ -123,15 +125,27 @@ export function sanitizeModelTuning<T extends Partial<AiModelTuningConfig> | und
       needsV4Migration &&
       String(cfg.model || '').trim() === GEMINI_MODELS.fast &&
       String(cfg.fallbackModel || '').trim() === GEMINI_MODELS.fast;
-    const model = !onFreeTierPair && isKnownModel(cfg.model) ? cfg.model.trim() : defaults.model;
     const plannerStage = stage === 'planner' || stage === 'meditate';
+    const migrateFlashPrimary =
+      needsV7Migration &&
+      plannerStage &&
+      String(cfg.model || '').trim() === GEMINI_MODELS.balanced;
+    const model =
+      !onFreeTierPair && !migrateFlashPrimary && isKnownModel(cfg.model)
+        ? cfg.model.trim()
+        : defaults.model;
     const migrateProFallback =
       (needsV2Migration || (needsV6Migration && plannerStage)) &&
       String(cfg.fallbackModel || '').trim() === GEMINI_MODELS.strong;
+    const migratePlannerFallbackToFlash =
+      needsV7Migration &&
+      plannerStage &&
+      String(cfg.fallbackModel || '').trim() === GEMINI_MODELS.fast;
     const fallbackModel =
       !onFreeTierPair &&
       isKnownModel(cfg.fallbackModel) &&
-      !migrateProFallback
+      !migrateProFallback &&
+      !migratePlannerFallbackToFlash
         ? cfg.fallbackModel.trim()
         : defaults.fallbackModel;
     const raiseTokens = needsV5Migration && plannerStage && (cfg.maxOutputTokens ?? 0) < (defaults.maxOutputTokens ?? 0);

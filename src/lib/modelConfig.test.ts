@@ -10,10 +10,10 @@ import {
 import { resolveStageModelConfig } from './promptBuilder';
 import { createInitialSeedState } from './seedData';
 
-test('stage defaults: smallest model that does the job, and a different model as backup', () => {
+test('stage defaults: gemini-flash-lite-latest is primary for every stage, with gemini-flash-latest as backup', () => {
   const expected = {
-    meditate: [GEMINI_MODELS.balanced, GEMINI_MODELS.fast],
-    planner: [GEMINI_MODELS.balanced, GEMINI_MODELS.fast],
+    meditate: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
+    planner: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
     intent: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
     bufferEvaluation: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
     message: [GEMINI_MODELS.fast, GEMINI_MODELS.balanced],
@@ -61,7 +61,7 @@ test('sanitizeModelTuning replaces retired models, keeps owner choices, and pres
   assert.equal(tuning.bufferEvaluation.model, GEMINI_MODELS.balanced);
   assert.equal(tuning.bufferEvaluation.fallbackModel, defaultStageConfig('bufferEvaluation').fallbackModel);
   assert.equal(tuning.maxRecentConversationTurns, 6);
-  assert.equal(tuning.modelDefaultsVersion, 6);
+  assert.equal(tuning.modelDefaultsVersion, 7);
   // Input is not mutated.
   assert.equal(saved.meditate.model, 'gemini-2.5-flash');
 
@@ -75,7 +75,7 @@ test('v4: stages left on the free-tier pair (Flash-Lite + Flash-Lite) move to th
   const { tuning, changed } = sanitizeModelTuning(saved);
   assert.equal(changed, true);
   assert.deepEqual([tuning.intent.model, tuning.intent.fallbackModel], [GEMINI_MODELS.fast, GEMINI_MODELS.balanced]);
-  assert.deepEqual([tuning.planner.model, tuning.planner.fallbackModel], [GEMINI_MODELS.balanced, GEMINI_MODELS.fast]);
+  assert.deepEqual([tuning.planner.model, tuning.planner.fallbackModel], [GEMINI_MODELS.fast, GEMINI_MODELS.balanced]);
   assert.equal(tuning.planner.temperature, 0.3);
   assert.deepEqual([tuning.message.model, tuning.message.fallbackModel], [GEMINI_MODELS.fast, GEMINI_MODELS.balanced]);
   // After the migration, an owner who picks Flash-Lite for both again is left alone.
@@ -111,4 +111,20 @@ test('v5: planner stages saved with 4096 tokens and no thinking cap get 8192 and
   assert.equal((tuning.intent as { thinkingBudget?: number }).thinkingBudget, undefined);
   assert.equal(resolveStageModelConfig('PLANNER', tuning).thinkingBudget, 1024);
   assert.equal(resolveStageModelConfig('INTENT', tuning).thinkingBudget, undefined);
+});
+
+test('planner primary model is gemini-flash-lite-latest and v6 planner defaults migrate to it', () => {
+  assert.equal(defaultStageConfig('planner').model, 'gemini-flash-lite-latest');
+  assert.equal(defaultStageConfig('meditate').model, 'gemini-flash-lite-latest');
+  assert.equal(resolveStageModelConfig('PLANNER', createInitialSeedState().model_tuning).model, 'gemini-flash-lite-latest');
+
+  const v6Saved = {
+    modelDefaultsVersion: 6,
+    planner: { model: 'gemini-flash-latest', fallbackModel: 'gemini-flash-lite-latest', temperature: 0.2, maxOutputTokens: 8192 },
+  };
+  const { tuning, changed } = sanitizeModelTuning(v6Saved);
+  assert.equal(changed, true);
+  assert.equal(tuning.modelDefaultsVersion, 7);
+  assert.equal(tuning.planner.model, 'gemini-flash-lite-latest');
+  assert.equal(tuning.planner.fallbackModel, 'gemini-flash-latest');
 });
