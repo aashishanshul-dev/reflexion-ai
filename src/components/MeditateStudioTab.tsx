@@ -22,6 +22,7 @@ import {
   Zap,
 } from 'lucide-react';
 import {
+  languageLabel,
   QUADRANT_OPTION_LABELS,
   RACI_ROLE_LABELS,
   SECTION_EXPLAINERS,
@@ -1304,7 +1305,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-ink font-display">Meditate</h3>
-                    <p className="text-[10px] text-slate">{state.model_tuning?.meditate?.model || 'Gemini'} · Voice typing</p>
+                    <p className="text-[10px] text-slate">Powered by Gemini · Voice typing</p>
                   </div>
                 </div>
               </div>
@@ -1768,7 +1769,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                         </span>
                       </div>
                       <p className="text-xs text-slate">
-                        X-axis: Dynamic Process Stages · Y-axis: Involved Teammates. Drag or re-assign tasks below.
+                        Each row is a person; each column is a step. Drag or reassign tasks below.
                       </p>
                     </div>
 
@@ -1851,7 +1852,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                               </div>
                             </div>
                             <span className="mt-1 inline-block text-[10px] text-slate">
-                              {member?.preferredLanguage || 'HINGLISH'}
+                              {languageLabel(member?.preferredLanguage)}
                             </span>
                           </div>
 

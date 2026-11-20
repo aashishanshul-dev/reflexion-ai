@@ -138,7 +138,7 @@ export const BossReviewQueueTab: React.FC<BossReviewQueueTabProps> = ({
                   {item.status === 'OPEN' ? (
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-warn-border bg-warn-soft px-3 py-1 text-xs font-semibold text-warn">
                       <PauseCircle className="h-3.5 w-3.5 text-warn" />
-                      <span>SLA Timer Paused</span>
+                      <span>On hold</span>
                     </div>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-md border border-ok-border bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok tabular-nums">

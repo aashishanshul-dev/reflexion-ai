@@ -16,7 +16,12 @@ import {
   Users,
 } from 'lucide-react';
 import { DemoVisitorsPanel } from './DemoVisitorsPanel';
-import { SECTION_EXPLAINERS } from '../lib/plainLabels';
+import {
+  aiStageLabel,
+  memoryCategoryLabel,
+  SECTION_EXPLAINERS,
+  validationStatusLabel,
+} from '../lib/plainLabels';
 import {
   AiModelTuningConfig,
   BusinessProfileConfig,
@@ -1233,7 +1238,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                               : 'bg-surface-muted text-slate'
                         }`}
                       >
-                        {sop.defaultClassification}
+                        {sop.defaultClassification === 'MAJOR' ? 'Big' : 'Small'}
                       </span>
                     </div>
                     <div className="text-xs font-medium mt-1 opacity-95">{sop.categoryName}</div>
@@ -1488,10 +1493,10 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                 onChange={(e) => setMemCategory(e.target.value as SystemMemoryCategory)}
                 className="rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-xs font-semibold text-ink focus:border-signal focus:outline-none"
               >
-                <option value="BUSINESS_RULE">BUSINESS_RULE</option>
-                <option value="VENDOR_FACT">VENDOR_FACT</option>
-                <option value="STAFF_TRAIT">STAFF_TRAIT</option>
-                <option value="SOP_PREFERENCE">SOP_PREFERENCE</option>
+                <option value="BUSINESS_RULE">{memoryCategoryLabel('BUSINESS_RULE')}</option>
+                <option value="VENDOR_FACT">{memoryCategoryLabel('VENDOR_FACT')}</option>
+                <option value="STAFF_TRAIT">{memoryCategoryLabel('STAFF_TRAIT')}</option>
+                <option value="SOP_PREFERENCE">{memoryCategoryLabel('SOP_PREFERENCE')}</option>
               </select>
               <input
                 type="text"
@@ -1537,7 +1542,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                       }
                     />
                     <span className="rounded bg-surface-muted px-2 py-0.5 text-[10px] font-bold text-slate">
-                      {rule.category}
+                      {memoryCategoryLabel(rule.category)}
                     </span>
                     {isPendingApproval && (
                       <span className="rounded-full bg-warn-soft border border-warn-border text-warn px-2 py-0.5 text-[10px] font-bold">
@@ -1625,14 +1630,14 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-hairline pb-3">
               <div>
                 <h2 className="text-sm font-bold text-ink">
-                  Conversation Context Cap &amp; Slot Anonymization
+                  Privacy &amp; Conversation History Limit
                 </h2>
                 <p className="text-xs text-slate mt-0.5">
-                  All prompts replace staff names and phone numbers with anonymized Slot IDs (P1, P2...) before calling Gemini. Older conversation turns beyond the cap are condensed into a concise summary.
+                  Staff names and phone numbers are hidden before calling Gemini. Older conversation turns beyond the limit are condensed into a short summary.
                 </p>
               </div>
               <span className="rounded-full bg-ok-soft border border-ok-border px-2.5 py-0.5 text-[11px] font-bold text-ok shrink-0">
-                Zero-PII Slot Identity Active
+                Privacy Protection Active
               </span>
             </div>
 
@@ -1844,7 +1849,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
             <div className="rounded-2xl border border-hairline bg-surface p-6 shadow-[var(--shadow-card)] space-y-4">
               <div className="border-b border-hairline pb-3">
                 <h3 className="text-sm font-bold text-ink">
-                  Fallback Single-Pass Planning (`MEDITATE_PLANNING`)
+                  Fallback Single-Pass Planning
                 </h3>
                 <p className="text-xs text-slate mt-0.5">
                   Model, temperature, and output token budget for fallback single-pass planning.
@@ -1918,7 +1923,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
             <div className="rounded-2xl border border-hairline bg-surface p-6 shadow-[var(--shadow-card)] space-y-4">
               <div className="border-b border-hairline pb-3">
                 <h3 className="text-sm font-bold text-ink">
-                  Stage 2: WhatsApp Buffer Inspector (`BUFFER_EVALUATION`)
+                  Stage 2: WhatsApp Reply Inspector
                 </h3>
                 <p className="text-xs text-slate mt-0.5">
                   Controls model, temperature, and output token budget for multimodal WhatsApp batch checks.
@@ -2143,7 +2148,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                             second: '2-digit',
                           })}
                         </td>
-                        <td className="py-2 pr-3 font-semibold">{log.stage}</td>
+                        <td className="py-2 pr-3 font-semibold">{aiStageLabel(log.stage)}</td>
                         <td className="py-2 pr-3 font-mono text-[11px]">{log.model}</td>
                         <td className="py-2 pr-3 font-mono tabular-nums text-[11px]">
                           {log.temperature} / {log.maxOutputTokens}
@@ -2165,7 +2170,7 @@ export const SopsMemoryTab: React.FC<SopsMemoryTabProps> = ({
                             }`}
                             title={log.validationNote}
                           >
-                            {log.validationStatus}
+                            {validationStatusLabel(log.validationStatus)}
                           </span>
                         </td>
                       </tr>

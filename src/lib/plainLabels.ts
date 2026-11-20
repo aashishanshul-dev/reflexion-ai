@@ -4,7 +4,16 @@
  * agenda) stay unchanged in code, types, tests and prompts; only what the user
  * sees is mapped here.
  */
-import type { BossReviewType, Classification, Quadrant, TaskStatus } from '../types/ops.ts';
+import type {
+  AiStageName,
+  AiValidationStatus,
+  BossReviewType,
+  Classification,
+  PreferredLanguage,
+  Quadrant,
+  SystemMemoryCategory,
+  TaskStatus,
+} from '../types/ops.ts';
 
 export const SECTION_EXPLAINERS = {
   meditate:
@@ -78,6 +87,60 @@ export const CLASSIFICATION_LABELS: Record<Classification, string> = {
   MAJOR: 'Big task',
   MINOR: 'Quick task',
 };
+
+export const LANGUAGE_LABELS: Record<PreferredLanguage, string> = {
+  HINGLISH: 'Hinglish',
+  HINDI: 'Hindi',
+  ENGLISH: 'English',
+};
+
+export function languageLabel(lang: PreferredLanguage | string | undefined | null): string {
+  if (!lang) return 'Hinglish';
+  return (LANGUAGE_LABELS as Record<string, string>)[lang] || 'Hinglish';
+}
+
+export const MEMORY_CATEGORY_LABELS: Record<SystemMemoryCategory, string> = {
+  BUSINESS_RULE: 'Business rule',
+  VENDOR_FACT: 'Vendor fact',
+  STAFF_TRAIT: 'Staff trait',
+  SOP_PREFERENCE: 'Method preference',
+};
+
+export function memoryCategoryLabel(
+  cat: SystemMemoryCategory | string | undefined | null
+): string {
+  if (!cat) return 'Business rule';
+  return (MEMORY_CATEGORY_LABELS as Record<string, string>)[cat] || 'Business rule';
+}
+
+export const AI_STAGE_LABELS: Record<AiStageName, string> = {
+  INTENT: 'Understand',
+  PLANNER: 'Plan',
+  MEDITATE_PLANNING: 'Plan',
+  BUFFER_EVALUATION: 'Read reply',
+  MESSAGE: 'Write message',
+  IMPORT: 'Import team',
+  OWNER_EDIT: 'Owner edit',
+};
+
+export function aiStageLabel(stage: AiStageName | string | undefined | null): string {
+  if (!stage) return 'Assistant';
+  return (AI_STAGE_LABELS as Record<string, string>)[stage] || 'Assistant';
+}
+
+export const VALIDATION_STATUS_LABELS: Record<AiValidationStatus, string> = {
+  VALID: 'Ready',
+  SCHEMA_REPAIRED: 'Fixed',
+  FALLBACK_USED: 'Backup used',
+  ERROR: 'Needs check',
+};
+
+export function validationStatusLabel(
+  status: AiValidationStatus | string | undefined | null
+): string {
+  if (!status) return 'Ready';
+  return (VALIDATION_STATUS_LABELS as Record<string, string>)[status] || 'Ready';
+}
 
 /**
  * Strips raw validator codes, JSON payloads, and technical prefixes from error

@@ -30,6 +30,7 @@ import {
 } from '../types/ops';
 import { isWithin24HrWindow } from '../lib/opsEngine';
 import { normalizeIndianPhone } from '../lib/phoneText';
+import { languageLabel } from '../lib/plainLabels';
 import { buildTeamScorecard } from '../lib/scorecard';
 
 interface AnalyticsRosterTabProps {
@@ -748,7 +749,7 @@ export const AnalyticsRosterTab: React.FC<AnalyticsRosterTabProps> = ({
                     </div>
                     <div>
                       <span>Language: </span>
-                      <strong className="text-ink">{m.preferredLanguage}</strong>
+                      <strong className="text-ink">{languageLabel(m.preferredLanguage)}</strong>
                     </div>
                     <div>
                       <span>WhatsApp Window: </span>

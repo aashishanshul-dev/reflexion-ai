@@ -393,7 +393,7 @@ export const TeamViewTab: React.FC<TeamViewTabProps> = ({
             <div className="flex items-center gap-3 min-w-0">
               <span className={`h-2 w-2 rounded-full shrink-0 ${BAND_DOT[capBand]}`} />
               <span className="text-xs font-semibold text-ink tabular-nums">
-                {capacity.totalActive} / {capacity.totalCapacity} slots active
+                {capacity.totalActive} / {capacity.totalCapacity} active tasks
               </span>
               <div className="hidden sm:block w-28 h-1.5 rounded-full bg-surface-muted overflow-hidden">
                 <div

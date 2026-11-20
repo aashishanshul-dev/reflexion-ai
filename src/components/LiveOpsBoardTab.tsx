@@ -595,7 +595,7 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
               }`}
             >
               <Calendar className="h-3.5 w-3.5" />
-              <span>Macro Gantt</span>
+              <span>Timeline</span>
             </button>
             <button
               type="button"
@@ -607,7 +607,7 @@ export const LiveOpsBoardTab: React.FC<LiveOpsBoardTabProps> = ({
               }`}
             >
               <Columns className="h-3.5 w-3.5" />
-              <span>Split All-in-One</span>
+              <span>Split view</span>
             </button>
           </div>
 
