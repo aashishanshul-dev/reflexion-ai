@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Sora", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Hourglass X · Light System Color Tokens */
+  --color-paper: #F7F6F2;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #EFECE4;
+  --color-hairline: #E6E3DC;
+  --color-hairline-strong: #D5D1C8;
+
+  --color-ink: #14161F;
+  --color-ink-hover: #252938;
+  --color-slate: #5E6270;
+
+  --color-signal: #FF5B23;
+  --color-signal-hover: #D94412;
+  --color-signal-soft: #FFF1EC;
+  --color-signal-border: #FFCBB8;
+  --color-signal-ink: #A93007;
+
+  /* Semantic Status Colors (Accessible WCAG AA pairs) */
+  --color-ok: #15803D;
+  --color-ok-solid: #16A34A;
+  --color-ok-soft: #F0FDF4;
+  --color-ok-border: #BBF7D0;
+
+  --color-warn: #B45309;
+  --color-warn-solid: #D97706;
+  --color-warn-soft: #FFFBEB;
+  --color-warn-border: #FDE68A;
+
+  --color-danger: #B91C1C;
+  --color-danger-solid: #DC2626;
+  --color-danger-soft: #FEF2F2;
+  --color-danger-border: #FECACA;
+
+  --color-info: #1D4ED8;
+  --color-info-soft: #EFF6FF;
+  --color-info-border: #BFDBFE;
+
+  /* Radii & Elevation */
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+  --shadow-card: 0 1px 2px rgba(20, 22, 31, 0.04);
+  --shadow-modal: 0 20px 48px -12px rgba(20, 22, 31, 0.16);
+}
+
+:root {
+  color-scheme: light;
+  --rx-paper: #F7F6F2;
+  --rx-surface: #FFFFFF;
+  --rx-surface-muted: #EFECE4;
+  --rx-hairline: #E6E3DC;
+  --rx-ink: #14161F;
+  --rx-slate: #5E6270;
+  --rx-signal: #FF5B23;
+  --rx-signal-hover: #D94412;
+  --rx-signal-soft: #FFF1EC;
+}
+
+@layer base {
+  html, body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.022em;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* WhatsApp chat wallpaper subtle pattern (preserved for Field Chat familiarity) */
+.whatsapp-chat-bg {
+  background-color: #efeae2;
+  background-image: radial-gradient(#dfd8cb 0.75px, transparent 0.75px), radial-gradient(#dfd8cb 0.75px, #efeae2 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}

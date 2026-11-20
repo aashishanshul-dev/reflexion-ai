@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// OpsCommand AI — each owner's workspace lives under tenants/{uid}/... and is private to them.
+// Paste this into Firebase console → Firestore Database → Rules → Publish.
+// (The server's firebase-admin access for the scheduler tick is not limited by these rules.)
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(tenantId) {
+      return request.auth != null && request.auth.uid == tenantId;
+    }
+
+    match /tenants/{tenantId}/{collection}/{docId} {
+      allow read, delete: if isOwner(tenantId)
+        && collection in ['settings', 'members', 'tasks', 'wbsHeads', 'agendas', 'reviews',
+                          'buffers', 'messages', 'notes', 'memory', 'aiLogs'];
+      allow create, update: if isOwner(tenantId)
+        && collection in ['settings', 'members', 'tasks', 'wbsHeads', 'agendas', 'reviews',
+                          'buffers', 'messages', 'notes', 'memory', 'aiLogs']
+        && request.resource.data.tenantId == tenantId
+        && request.resource.data.version is int;
+    }
+
+    // Everything else (including signed-out access) is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

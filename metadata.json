@@ -1,0 +1,1 @@
+{"name":"opscommand-ai","description":"WhatsApp-integrated command center for task execution, RACI management, and real-time operational analytics with Gemini AI-powered workflows.","requestFramePermissions":["microphone"],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}

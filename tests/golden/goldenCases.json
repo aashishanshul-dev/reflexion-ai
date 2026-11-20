@@ -1,0 +1,1729 @@
+[
+  {
+    "id": "GOLD-01",
+    "scenario": "Casual Microphone Test",
+    "brainDump": "Testing 1 2 3, hello, is my microphone working properly?",
+    "expected": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "chatReplyToBoss": "Loud and clear! Your microphone is working. Share an operational brief whenever ready.",
+      "reasoningSummary": "Short microphone check detected.",
+      "agendaTitle": "Mic Check",
+      "agendaQuadrant": "Q4_LOW",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-02",
+    "scenario": "Casual Morning Greeting",
+    "brainDump": "Hey good morning AI, are you online?",
+    "expected": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "chatReplyToBoss": "Good morning! Online and ready to plan tasks for {{P1}} and the team.",
+      "reasoningSummary": "Simple greeting without operational action.",
+      "agendaTitle": "Greeting",
+      "agendaQuadrant": "Q4_LOW",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-03",
+    "scenario": "Ambiguous Request Missing Equipment & Location",
+    "brainDump": "Something is broken near the back area, get someone to fix it soon.",
+    "expected": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "chatReplyToBoss": "Could you clarify which equipment or fixture is broken in the back area so I can assign the right specialist?",
+      "reasoningSummary": "Missing specific asset and location details.",
+      "agendaTitle": "Clarification Needed",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-04",
+    "scenario": "Incomplete Vendor Purchase Without Item List",
+    "brainDump": "Send someone to buy those spare parts we talked about yesterday.",
+    "expected": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "chatReplyToBoss": "Which exact spare parts and quantities should {{P2}} procure, and for which zone?",
+      "reasoningSummary": "Missing item list and quantities for procurement.",
+      "agendaTitle": "Spare Parts Clarification",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-05",
+    "scenario": "Single-Person Rooftop Solar Inverter Inspection",
+    "brainDump": "Ask Priya Nair to inspect the rooftop solar inverter display before noon and send a clear photo.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P3}} to inspect the rooftop solar inverter.",
+      "reasoningSummary": "Single continuous inspection task for technical specialist P3.",
+      "agendaTitle": "Rooftop Solar Inverter Check",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Inspect rooftop solar inverter display before noon",
+          "shortTag": "Solar Inverter",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Execution",
+          "microSteps": ["Check inverter error codes and output kW", "Send clear display photo on WhatsApp"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, please inspect the rooftop solar inverter before noon and share a clear photo."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Rooftop Solar Inverter Check",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Quick inspection of solar inverter display",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Execution"],
+          "involvedPhones": ["P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-06",
+    "scenario": "Single-Person Daily Recurring Cold-Room Log",
+    "brainDump": "Every morning have Priya Nair log the cold storage temperature and door seal condition.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Created a daily recurring Quick Task for {{P3}} to check cold storage temperature.",
+      "reasoningSummary": "Single-person recurring daily checklist.",
+      "agendaTitle": "Daily Cold Storage Log",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Log cold storage temperature & door seal condition",
+          "shortTag": "Cold Room Log",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "RECURRING",
+          "recurrenceRule": "DAILY",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Daily Check",
+          "microSteps": ["Record digital thermometer reading", "Inspect rubber door gasket seal", "Send log photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, daily cold room temperature & seal photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Daily Cold Storage Log",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Daily recurring cold storage check",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Daily Check"],
+          "involvedPhones": ["P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-07",
+    "scenario": "Single-Person Accounts Courier Reconciliation",
+    "brainDump": "Have Kavita Rao reconcile last week's courier invoices and upload the summary sheet today.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P5}} to reconcile courier invoices.",
+      "reasoningSummary": "Single-owner finance reconciliation task.",
+      "agendaTitle": "Courier Invoice Reconciliation",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Reconcile weekly courier invoices and upload summary",
+          "shortTag": "Courier Recon",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Verification",
+          "microSteps": ["Match dispatch slips against courier bill", "Share summary sheet on WhatsApp"],
+          "outboundWhatsappPreview": "Hello {{P5}}, please reconcile last week's courier invoices and upload the summary today."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Courier Invoice Reconciliation",
+          "domainCategory": "ACCOUNTS",
+          "contextSummary": "Weekly courier billing check",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 1,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Verification"],
+          "involvedPhones": ["P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-08",
+    "scenario": "Single-Person Warehouse Carton Count",
+    "brainDump": "Ask Dev Patel to count the remaining packaging carton rolls in Bay B and send photo confirmation.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P2}} to count Bay B carton rolls.",
+      "reasoningSummary": "Single continuous inventory check.",
+      "agendaTitle": "Bay B Carton Stock Count",
+      "agendaQuadrant": "Q3_DELEGATE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Count packaging carton rolls in Bay B",
+          "shortTag": "Bay B Stock",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Inventory",
+          "microSteps": ["Count unopened carton rolls in Bay B", "Send stack photo and count on WhatsApp"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, Bay B ke carton rolls ginkar photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Bay B Carton Stock Count",
+          "domainCategory": "PROCUREMENT",
+          "contextSummary": "Stock count in Bay B",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Inventory"],
+          "involvedPhones": ["P2"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-09",
+    "scenario": "Urgent Safety Oil Spill Cleanup",
+    "brainDump": "Oil spill spotted near loading dock gate 2, get Priya Nair to clean and cone off the hazard immediately.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Urgent Q1 Quick Task staged for {{P3}} to cone off and clean Dock Gate 2 oil spill.",
+      "reasoningSummary": "Immediate single-person safety action.",
+      "agendaTitle": "Dock Gate 2 Oil Spill Cleanup",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Cone off and clean oil spill at Loading Dock Gate 2",
+          "shortTag": "Dock Spill",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Safety Response",
+          "microSteps": ["Place hazard cones around Gate 2", "Apply absorbent & degrease floor", "Send clear floor photo"],
+          "outboundWhatsappPreview": "Urgent {{P3}}: Dock Gate 2 oil spill turant cone lagakar saaf karein aur photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Dock Gate 2 Oil Spill Cleanup",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Urgent dock safety cleanup",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Safety Response"],
+          "involvedPhones": ["P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-10",
+    "scenario": "Single-Person Print Shop Pickup & Placement",
+    "brainDump": "Ask Dev Patel to pick up the acrylic lobby signboard from the print shop and place it at reception.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P2}} to collect and place the lobby signboard.",
+      "reasoningSummary": "Same person picks up and places signboard without cross-team handoff.",
+      "agendaTitle": "Lobby Signboard Pickup",
+      "agendaQuadrant": "Q3_DELEGATE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Collect acrylic lobby signboard and place at reception",
+          "shortTag": "Lobby Sign",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Delivery",
+          "microSteps": ["Collect acrylic signboard with receipt", "Place on reception stand and send photo"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, print shop se acrylic signboard lekar reception par lagayein aur photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Lobby Signboard Pickup",
+          "domainCategory": "PROCUREMENT",
+          "contextSummary": "Signboard pickup and placement",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Delivery"],
+          "involvedPhones": ["P2"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-11",
+    "scenario": "Two-Person Procurement to Kitchen Duct Installation Handoff",
+    "brainDump": "Buy 4 industrial exhaust fans with vendor receipt via Dev Patel, hand over to Supervisor Rohan Verma, and have Priya Nair mount them in the kitchen duct before 6 PM.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 2,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Split into 2 sequential swimlane tasks across {{P2}} (Procurement) and {{P3}} (Installation) with {{P4}} accountable.",
+      "reasoningSummary": "Cross-team ownership handoff between procurement P2 and technician P3.",
+      "agendaTitle": "Kitchen Exhaust Fan Procurement & Mounting",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Purchase 4 industrial exhaust fans and hand over on site",
+          "shortTag": "Buy Exhaust Fans",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P3"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Buy 4 heavy-duty exhaust fans", "Upload vendor invoice photo", "Hand over units to {{P4}}"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, 4 industrial exhaust fans bill ke saath kharid kar {{P4}} ko handover karein."
+        },
+        {
+          "title": "Mount and wire 4 exhaust fans in kitchen duct",
+          "shortTag": "Mount Fans",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Installation",
+          "microSteps": ["Mount 4 fans securely in kitchen duct", "Test airflow and send working photo before 6 PM"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, handover milte hi kitchen duct mein 4 exhaust fans mount karke test photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Kitchen Exhaust Fan Procurement & Mounting",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Two-stage procurement and installation workflow",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 1,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Installation"],
+          "involvedPhones": ["P2", "P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-12",
+    "scenario": "Three-Stage Banquet Chairs Purchase, Hall Setup & Vendor Advance",
+    "brainDump": "Order 50 folding banquet chairs from wholesale market with tax bill via Dev Patel, set them up in Hall A with Priya Nair, and have Kavita Rao log the vendor advance payment.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Structured 3-stage project across {{P2}}, {{P3}}, and {{P5}}.",
+      "reasoningSummary": "Three distinct roles (Procurement, Setup, Accounts) with sequential handoffs.",
+      "agendaTitle": "Hall A Banquet Chairs Rollout",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Procure 50 folding banquet chairs from wholesale vendor",
+          "shortTag": "Buy 50 Chairs",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P5"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Inspect chair frame quality", "Upload vendor invoice photo", "Deliver to Hall A"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, 50 folding chairs bill ke saath Hall A pahunchayein."
+        },
+        {
+          "title": "Arrange 50 folding chairs in Hall A layout",
+          "shortTag": "Hall A Setup",
+          "categoryId": "EVENT_PREP",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Hall Setup",
+          "microSteps": ["Arrange rows per Hall A floorplan", "Send wide-angle layout photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, chairs aate hi Hall A layout lagakar photo bhejein."
+        },
+        {
+          "title": "Record vendor advance & verify invoice for 50 chairs",
+          "shortTag": "Chair Bill Entry",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Accounts",
+          "microSteps": ["Verify uploaded vendor invoice", "Log advance UTR in ledger"],
+          "outboundWhatsappPreview": "Hello {{P5}}, please verify the 50-chair invoice and log the vendor advance."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Hall A Banquet Chairs Rollout",
+          "domainCategory": "EVENT_PREP",
+          "contextSummary": "50 chairs procurement, setup, and accounting",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Hall Setup", "Accounts"],
+          "involvedPhones": ["P2", "P3", "P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-13",
+    "scenario": "Forced Event Cutoff Back-Calculated AV & Stage Prep",
+    "brainDump": "Client product launch is on 2026-11-10. Dev Patel needs to source stage backdrop vinyl, Priya Nair must wire the podium spotlights, and Rohan Verma must run full AV rehearsal a day prior.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P4"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged hard-deadline launch readiness swimlanes for {{P2}}, {{P3}}, and {{P4}}.",
+      "reasoningSummary": "Hard event deadline requiring sequential sourcing, wiring, and rehearsal sign-off.",
+      "agendaTitle": "Client Product Launch Stage & AV Prep",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Source stage backdrop vinyl print",
+          "shortTag": "Backdrop Vinyl",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "isForcedDeadline": true,
+          "forcedDeadlineDate": "2026-11-09",
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Sourcing",
+          "microSteps": ["Collect printed vinyl banner", "Deliver to main stage"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, launch stage backdrop vinyl collect karke stage par deliver karein."
+        },
+        {
+          "title": "Rig and wire podium spotlights",
+          "shortTag": "Podium Spots",
+          "categoryId": "EVENT_PREP",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "isForcedDeadline": true,
+          "forcedDeadlineDate": "2026-11-09",
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Rigging",
+          "microSteps": ["Mount warm spotlights aimed at podium", "Secure floor cable Trunking"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, podium spotlights wire karke test photo bhejein."
+        },
+        {
+          "title": "Run full AV & lighting rehearsal T-1",
+          "shortTag": "AV Rehearsal",
+          "categoryId": "EVENT_PREP",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P4", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 1,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 2,
+          "isForcedDeadline": true,
+          "forcedDeadlineDate": "2026-11-09",
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Rehearsal",
+          "microSteps": ["Test wireless mics and projector switching", "Confirm final stage readiness photo"],
+          "outboundWhatsappPreview": "Hello {{P4}}, run full AV rehearsal a day before the launch and confirm readiness."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Client Product Launch Stage & AV Prep",
+          "domainCategory": "EVENT_PREP",
+          "contextSummary": "T-1 forced cutoff launch preparation",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 3,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-09",
+          "isForcedDeadline": true,
+          "dynamicStages": ["Sourcing", "Rigging", "Rehearsal"],
+          "involvedPhones": ["P2", "P3", "P4"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-14",
+    "scenario": "Dual Parallel Workstreams (2 WBS Heads: Chiller Flushing + Valve Procurement)",
+    "brainDump": "Major HVAC and plumbing issue in East Wing: Workstream 1 under Priya Nair will flush blocked chiller lines, while Workstream 2 under Dev Patel and Kavita Rao sources replacement brass valves and clears the vendor PO.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 4,
+      "minHeads": 2,
+      "maxHeads": 2,
+      "expectedResponsibleSlots": ["P3", "P2", "P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Created 2 parallel WBS Heads: HEAD-1 for {{P3}} (Chiller Flushing) and HEAD-2 for {{P2}} & {{P5}} (Brass Valve Sourcing & PO).",
+      "reasoningSummary": "Two independent workstreams split into 2 WBS Heads.",
+      "agendaTitle": "East Wing Chiller & Brass Valve Remediation",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Flush blocked East Wing chiller lines",
+          "shortTag": "Chiller Flush",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Flushing",
+          "microSteps": ["Isolate East Wing manifold", "Chemical flush return lines", "Verify pressure gauge"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, East Wing chiller lines flush karke pressure reading photo bhejein."
+        },
+        {
+          "title": "Source replacement heavy-duty brass isolation valves",
+          "shortTag": "Brass Valves",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P5"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-2",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Procure brass valves matching spec", "Send vendor quote/invoice photo"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, East Wing ke liye brass valves bill ke saath procure karein."
+        },
+        {
+          "title": "Clear vendor PO and release valve payment",
+          "shortTag": "Valve PO",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 1,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-2",
+          "swimlaneStage": "Settlement",
+          "microSteps": ["Verify valve invoice", "Release NEFT and share reference"],
+          "outboundWhatsappPreview": "Hello {{P5}}, verify the brass valve invoice and clear the PO payment."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "East Wing Chiller Line Flushing",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "On-site chiller line chemical flushing",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 1,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Flushing"],
+          "involvedPhones": ["P3"],
+          "status": "SWIMLANE_READY"
+        },
+        {
+          "headId": "HEAD-2",
+          "title": "Brass Valve Sourcing & PO Clearance",
+          "domainCategory": "PROCUREMENT",
+          "contextSummary": "Valve purchase and vendor PO settlement",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Settlement"],
+          "involvedPhones": ["P2", "P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-15",
+    "scenario": "Server Closet Dual-WAN Router Upgrade & Speed Sign-Off",
+    "brainDump": "Procure a dual-WAN gigabit router via Dev Patel, have Priya Nair rack and configure failover in the server closet, and get Rohan Verma to sign off speed tests.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P4"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 3 sequential IT upgrade tasks across {{P2}}, {{P3}}, and {{P4}}.",
+      "reasoningSummary": "Hardware purchase -> rack configuration -> supervisor verification gate.",
+      "agendaTitle": "Dual-WAN Router Failover Upgrade",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Purchase dual-WAN gigabit router with warranty invoice",
+          "shortTag": "Buy WAN Router",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Buy gigabit dual-WAN router", "Upload invoice & serial number photo"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, dual-WAN router warranty bill ke saath le aayein."
+        },
+        {
+          "title": "Rack router and configure ISP failover in server closet",
+          "shortTag": "Rack Router",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Configuration",
+          "microSteps": ["Mount router in rack", "Configure WAN1/WAN2 auto-failover"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, router rack mein mount karke WAN failover configure karein."
+        },
+        {
+          "title": "Verify WAN unplug failover & sign off speed test",
+          "shortTag": "WAN Sign-off",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P4", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 1,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Sign-Off",
+          "microSteps": ["Simulate primary ISP drop", "Post speedtest screenshot"],
+          "outboundWhatsappPreview": "Hello {{P4}}, please test ISP failover and sign off speed results."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Dual-WAN Router Failover Upgrade",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Router procurement, setup, and failover verification",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Configuration", "Sign-Off"],
+          "involvedPhones": ["P2", "P3", "P4"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-16",
+    "scenario": "Retail Storefront Promo Rollout & Printing Audit",
+    "brainDump": "Have Dev Patel collect printed promo standees from the press, Priya Nair install window LED strips at Storefront 1, and Kavita Rao audit promo printing charges.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Created 3-task storefront promo workflow for {{P2}}, {{P3}}, and {{P5}}.",
+      "reasoningSummary": "Three specialists handling print pickup, lighting setup, and invoice audit.",
+      "agendaTitle": "Storefront 1 Seasonal Promo Rollout",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Collect promo standees from printing press",
+          "shortTag": "Collect Standees",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P5"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Collection",
+          "microSteps": ["Check print quality", "Deliver standees to Storefront 1"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, press se promo standees lekar Storefront 1 pahunchayein."
+        },
+        {
+          "title": "Install window LED strips at Storefront 1",
+          "shortTag": "Window LEDs",
+          "categoryId": "EVENT_PREP",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Display Setup",
+          "microSteps": ["Mount LED strips along display frame", "Send illuminated window photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, Storefront 1 par LED strips install karke photo bhejein."
+        },
+        {
+          "title": "Audit promo printing press invoice",
+          "shortTag": "Print Bill Audit",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Audit",
+          "microSteps": ["Verify per-unit standee rate against quote", "Approve for payout"],
+          "outboundWhatsappPreview": "Hello {{P5}}, please audit the promo standee printing charges."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Storefront 1 Seasonal Promo Rollout",
+          "domainCategory": "EVENT_PREP",
+          "contextSummary": "Promo print pickup, window display LEDs, and cost audit",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Collection", "Display Setup", "Audit"],
+          "involvedPhones": ["P2", "P3", "P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-17",
+    "scenario": "Backup Generator Starter Battery Replacement & Scrap Credit",
+    "brainDump": "Backup generator failed morning load test. Dev Patel must buy a commercial 12V starter battery with warranty card, Priya Nair must install and run a 15-minute load test, and Kavita Rao must record old battery scrap credit.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 3-task generator battery overhaul across {{P2}}, {{P3}}, and {{P5}}.",
+      "reasoningSummary": "Purchase -> technical installation -> scrap credit accounting.",
+      "agendaTitle": "Generator Starter Battery Overhaul",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Buy 12V commercial starter battery with warranty card",
+          "shortTag": "Buy Battery",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P5"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Purchase 12V commercial battery", "Send warranty card & invoice photo"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, 12V generator battery warranty card ke saath le aayein."
+        },
+        {
+          "title": "Install new battery and run 15-min load test",
+          "shortTag": "Fit Battery",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Installation",
+          "microSteps": ["Connect terminals with anti-corrosion grease", "Run 15-min load test & send voltage photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, nayi battery lagakar 15-min load test photo bhejein."
+        },
+        {
+          "title": "Log old battery buyback scrap credit",
+          "shortTag": "Scrap Credit",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q3_DELEGATE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 1,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Accounting",
+          "microSteps": ["Verify scrap credit note on vendor bill", "Record net expense"],
+          "outboundWhatsappPreview": "Hello {{P5}}, record the old battery scrap credit note in accounts."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Generator Starter Battery Overhaul",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Emergency starter battery purchase, load test, and scrap credit",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 1.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Installation", "Accounting"],
+          "involvedPhones": ["P2", "P3", "P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-18",
+    "scenario": "Autoclave Calibrated Pressure Gauge Fitment & Supervisor Sign-Off",
+    "brainDump": "Autoclave pressure gauge is drifting. Dev Patel will pick up a calibrated replacement gauge, Priya Nair will fit it and run test cycle, and Rohan Verma will sign off readiness.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 3,
+      "maxTasks": 3,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3", "P4"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 3-stage autoclave calibration pipeline for {{P2}}, {{P3}}, and {{P4}}.",
+      "reasoningSummary": "Pickup -> technical fitment -> supervisor safety gate.",
+      "agendaTitle": "Autoclave Pressure Gauge Replacement",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Collect calibrated replacement pressure gauge",
+          "shortTag": "Pickup Gauge",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Sourcing",
+          "microSteps": ["Collect gauge with calibration certificate", "Hand over to {{P3}}"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, calibrated pressure gauge certificate ke saath {{P3}} ko dein."
+        },
+        {
+          "title": "Fit pressure gauge and run test sterilization cycle",
+          "shortTag": "Fit Gauge",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Fitment",
+          "microSteps": ["Install gauge with thread seal", "Run test pressure hold cycle"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, gauge fit karke test cycle pressure photo bhejein."
+        },
+        {
+          "title": "Approve calibration certificate & operational readiness",
+          "shortTag": "Safety Sign-Off",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P4", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 1,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Sign-Off",
+          "microSteps": ["Verify certificate serial & zero-leak test", "Sign off unit logbook"],
+          "outboundWhatsappPreview": "Hello {{P4}}, verify autoclave pressure test and sign off readiness."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Autoclave Pressure Gauge Replacement",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Calibrated gauge replacement and sign-off",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 1,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Sourcing", "Fitment", "Sign-Off"],
+          "involvedPhones": ["P2", "P3", "P4"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-19",
+    "scenario": "Multi-Head Annual Fire & Compliance Inspection Prep",
+    "brainDump": "Fire and compliance inspection next week: Head 1 — Dev Patel and Priya Nair must refill expired CO2 extinguishers and test smoke alarms; Head 2 — Kavita Rao and Rohan Verma must compile vendor compliance certificates and AMC logs.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 4,
+      "maxTasks": 4,
+      "minHeads": 2,
+      "maxHeads": 2,
+      "expectedResponsibleSlots": ["P2", "P3", "P5", "P4"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Organized into 2 WBS Heads: Physical Fire Safety ({{P2}}, {{P3}}) and Compliance Documentation ({{P5}}, {{P4}}).",
+      "reasoningSummary": "Two distinct domain workstreams for annual compliance.",
+      "agendaTitle": "Annual Fire & Compliance Inspection Readiness",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Refill expired CO2 fire extinguishers via certified vendor",
+          "shortTag": "CO2 Refill",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Refill",
+          "microSteps": ["Send cylinders for refill", "Mount back with fresh inspection tags"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, CO2 extinguishers refill karwa kar fresh tag photo bhejein."
+        },
+        {
+          "title": "Test all corridor smoke detectors and alarm panel",
+          "shortTag": "Smoke Alarms",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 2,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Alarm Testing",
+          "microSteps": ["Trigger test spray per zone", "Confirm green fire panel photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, sabhi smoke alarms test karke panel photo bhejein."
+        },
+        {
+          "title": "Compile vendor compliance certificates & tax receipts",
+          "shortTag": "Compliance Docs",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 2,
+          "wbsHeadId": "HEAD-2",
+          "swimlaneStage": "Compilation",
+          "microSteps": ["Gather active vendor certificates", "Prepare indexed compliance binder"],
+          "outboundWhatsappPreview": "Hello {{P5}}, compile all vendor compliance certificates into the audit folder."
+        },
+        {
+          "title": "Audit and sign off annual AMC service logs",
+          "shortTag": "AMC Sign-Off",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P4", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 2,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 3,
+          "wbsHeadId": "HEAD-2",
+          "swimlaneStage": "Review",
+          "microSteps": ["Cross-check electrical & HVAC AMC dates", "Countersign audit binder"],
+          "outboundWhatsappPreview": "Hello {{P4}}, review and countersign the compiled AMC logs."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Physical Fire Extinguisher & Alarm Readiness",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "CO2 refills and smoke detector testing",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-09",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Refill", "Alarm Testing"],
+          "involvedPhones": ["P2", "P3"],
+          "status": "SWIMLANE_READY"
+        },
+        {
+          "headId": "HEAD-2",
+          "title": "Compliance Certificates & AMC Audit Binder",
+          "domainCategory": "ACCOUNTS",
+          "contextSummary": "Paperwork compilation and supervisor sign-off",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 3,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-10",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Compilation", "Review"],
+          "involvedPhones": ["P5", "P4"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-20",
+    "scenario": "Explicit Phone & Name PII Scrubbing Stress-Test",
+    "brainDump": "Call Dev Patel at +919811100002 to buy 20m armoured cable and hand over to Priya Nair (919811100003) for trench laying with Rohan Verma (919811100004) supervising.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "PROJECT_SWIMLANES",
+      "minTasks": 2,
+      "maxTasks": 2,
+      "minHeads": 1,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2", "P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged cable procurement for {{P2}} and trench laying for {{P3}} under {{P4}}.",
+      "reasoningSummary": "Scrubbed PII mapped cleanly to P2, P3, and P4.",
+      "agendaTitle": "Armoured Cable Purchase & Trench Laying",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Purchase 20m armoured cable and hand over to {{P3}}",
+          "shortTag": "Buy Cable",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": ["P3"] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Procurement",
+          "microSteps": ["Buy 20m armoured cable with receipt", "Hand over to {{P3}} on site"],
+          "outboundWhatsappPreview": "Namaste {{P2}}, 20m armoured cable bill ke saath lekar {{P3}} ko handover karein."
+        },
+        {
+          "title": "Lay 20m armoured cable in outdoor trench",
+          "shortTag": "Lay Cable",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": 0,
+          "triggerCondition": "PARTIAL_OR_BOSS_APPROVAL",
+          "dueDateOffsetDays": 1,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Trenching",
+          "microSteps": ["Lay cable with warning tape", "Get {{P4}} inspection photo"],
+          "outboundWhatsappPreview": "Namaste {{P3}}, cable trench mein bichhakar {{P4}} se check karwayein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Armoured Cable Purchase & Trench Laying",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Cable sourcing and trench installation",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 2,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-08",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Procurement", "Trenching"],
+          "involvedPhones": ["P2", "P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-21",
+    "scenario": "Non-Task Note: Equipment Serial & Warranty Observation",
+    "brainDump": "Note for our records: the backup air compressor serial number is CMP-8841 and its service warranty runs through December.",
+    "expected": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "nonTaskKind": "NOTE",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "chatReplyToBoss": "Noted for your records: backup air compressor serial CMP-8841 (warranty valid through December). No tasks dispatched.",
+      "reasoningSummary": "Informational reference note without an actionable work directive.",
+      "agendaTitle": "Reference Note",
+      "agendaQuadrant": "Q4_LOW",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-22",
+    "scenario": "Non-Task Rule: Standing Vendor Retention Policy",
+    "brainDump": "From now on, never release final vendor retention payments until a signed completion photo is uploaded in the group.",
+    "expected": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "nonTaskKind": "RULE",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "chatReplyToBoss": "Understood — I have staged this standing vendor retention policy for your System Memory rules without dispatching a task.",
+      "reasoningSummary": "Standing policy rule statement rather than an immediate task.",
+      "agendaTitle": "Standing Policy Rule",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [
+        {
+          "category": "BUSINESS_RULE",
+          "fact": "Never release final vendor retention payments until a signed completion photo is uploaded."
+        }
+      ],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-23",
+    "scenario": "Non-Task Casual Sign-Off Message (>12 words)",
+    "brainDump": "Thanks for helping keep everything organized today, nothing else to assign right now, signing off for the evening.",
+    "expected": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "nonTaskKind": "CASUAL",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "CASUAL_OR_TEST",
+      "chatReplyToBoss": "You're welcome! Have a restful evening — all active board items remain monitored.",
+      "reasoningSummary": "Conversational sign-off with explicit instruction not to assign anything.",
+      "agendaTitle": "Evening Sign-Off",
+      "agendaQuadrant": "Q4_LOW",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-24",
+    "scenario": "Vague Leak Report Requiring One Clarifying Question",
+    "brainDump": "There is water leaking somewhere on the upper floor, get someone to shut the valve and repair it.",
+    "expected": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "chatReplyToBoss": "Which exact room or zone on the upper floor has the leak, and which supply valve or fixture is affected?",
+      "reasoningSummary": "Missing critical location and fixture details needed before dispatching a technician.",
+      "agendaTitle": "Upper Floor Leak Clarification",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-25",
+    "scenario": "Vague Filter Order Requiring One Clarifying Question",
+    "brainDump": "Order replacement filters from the supplier today so we have spares in stock.",
+    "expected": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "expectedMode": "NONE",
+      "minTasks": 0,
+      "maxTasks": 0,
+      "minHeads": 0,
+      "maxHeads": 0,
+      "expectedResponsibleSlots": []
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "NEEDS_CLARIFICATION",
+      "chatReplyToBoss": "Which equipment filter model/size and how many units should {{P2}} order from the supplier?",
+      "reasoningSummary": "Missing filter specification and quantity.",
+      "agendaTitle": "Filter Order Clarification",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [],
+      "wbsHeads": []
+    }
+  },
+  {
+    "id": "GOLD-26",
+    "scenario": "One-Person Multi-Step Panel Maintenance (Must Not Be Split)",
+    "brainDump": "Have Priya Nair isolate power on distribution panel B2, tighten all terminal lugs, vacuum internal dust, check thermal readings, and send a photo.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 0,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P3"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P3}} to service distribution panel B2 end-to-end.",
+      "reasoningSummary": "All five actions are performed continuously by one specialist (P3) with no handoff.",
+      "agendaTitle": "Distribution Panel B2 Preventive Service",
+      "agendaQuadrant": "Q1_DO_FIRST",
+      "agendaMajorOrMinor": "MAJOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Service distribution panel B2 and verify thermal readings",
+          "shortTag": "Panel B2 Service",
+          "categoryId": "MAINTENANCE",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P3", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Execution",
+          "microSteps": [
+            "Isolate incoming power on distribution panel B2",
+            "Torque and tighten all terminal lugs",
+            "Vacuum internal cabinet dust",
+            "Check thermal readings after re-energizing",
+            "Send clear panel and thermal meter photo"
+          ],
+          "outboundWhatsappPreview": "Namaste {{P3}}, panel B2 isolate karke lugs tighten, dust clean aur thermal reading photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Distribution Panel B2 Preventive Service",
+          "domainCategory": "MAINTENANCE",
+          "contextSummary": "Single-person continuous electrical panel service",
+          "quadrant": "Q1_DO_FIRST",
+          "majorOrMinor": "MAJOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Execution"],
+          "involvedPhones": ["P3"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-27",
+    "scenario": "One-Person Store-Room Breaker Audit & Labeling (Must Not Be Split)",
+    "brainDump": "Ask Dev Patel to count all spare circuit breakers in the store room, label each bin by rating, and share a shelf photo before 5 PM.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 0,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P2"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P2}} to audit and label spare circuit breakers before 5 PM.",
+      "reasoningSummary": "Continuous store-room audit by one person (P2); kept as a single Quick Task.",
+      "agendaTitle": "Spare Circuit Breaker Audit & Bin Labeling",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Count spare circuit breakers, label bins by rating, and share photo",
+          "shortTag": "Breaker Stock Audit",
+          "categoryId": "PROCUREMENT",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P2", "A": "P4", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Audit",
+          "microSteps": [
+            "Count all spare circuit breakers in store room",
+            "Label each storage bin clearly by amperage rating",
+            "Share organized shelf photo on WhatsApp before 5 PM"
+          ],
+          "outboundWhatsappPreview": "Namaste {{P2}}, store room mein spare breakers count karke rating labels lagayein aur 5 PM tak photo bhejein."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Spare Circuit Breaker Audit & Bin Labeling",
+          "domainCategory": "PROCUREMENT",
+          "contextSummary": "Single-person inventory count and bin organization",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Audit"],
+          "involvedPhones": ["P2"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD-28",
+    "scenario": "One-Person Weekly Petty Cash Reconciliation (Must Not Be Split)",
+    "brainDump": "Have Kavita Rao reconcile this week's petty cash vouchers against the ledger sheet and list any missing serial numbers.",
+    "expected": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "expectedMode": "QUICK_TASK",
+      "minTasks": 1,
+      "maxTasks": 1,
+      "minHeads": 0,
+      "maxHeads": 1,
+      "expectedResponsibleSlots": ["P5"]
+    },
+    "simulatedSlotResponse": {
+      "intentClassification": "ACTIONABLE_AGENDA",
+      "chatReplyToBoss": "Staged 1 Quick Task for {{P5}} to reconcile petty cash vouchers and report any missing serial numbers.",
+      "reasoningSummary": "Single-owner accounting reconciliation with no handoff.",
+      "agendaTitle": "Weekly Petty Cash Voucher Reconciliation",
+      "agendaQuadrant": "Q2_SCHEDULE",
+      "agendaMajorOrMinor": "MINOR",
+      "suggestedMemoryRules": [],
+      "draftedTasks": [
+        {
+          "title": "Reconcile weekly petty cash vouchers and flag missing serial numbers",
+          "shortTag": "Petty Cash Audit",
+          "categoryId": "ACCOUNTS",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "taskFrequency": "ONE_TIME",
+          "recurrenceRule": "NONE",
+          "raci": { "R": "P5", "A": "P1", "C": [], "I": [] },
+          "dependsOnSubtaskIndex": null,
+          "triggerCondition": "FULL_COMPLETION",
+          "dueDateOffsetDays": 0,
+          "wbsHeadId": "HEAD-1",
+          "swimlaneStage": "Reconciliation",
+          "microSteps": [
+            "Match physical petty cash vouchers against ledger sheet",
+            "Compile list of any missing voucher serial numbers",
+            "Share reconciliation summary"
+          ],
+          "outboundWhatsappPreview": "Hello {{P5}}, please reconcile this week's petty cash vouchers against the ledger and share any missing serial numbers."
+        }
+      ],
+      "wbsHeads": [
+        {
+          "headId": "HEAD-1",
+          "title": "Weekly Petty Cash Voucher Reconciliation",
+          "domainCategory": "ACCOUNTS",
+          "contextSummary": "Single-person voucher reconciliation",
+          "quadrant": "Q2_SCHEDULE",
+          "majorOrMinor": "MINOR",
+          "tentativeDurationDays": 0.5,
+          "tentativeStartDate": "2026-11-07",
+          "tentativeDeadline": "2026-11-07",
+          "isForcedDeadline": false,
+          "dynamicStages": ["Reconciliation"],
+          "involvedPhones": ["P5"],
+          "status": "SWIMLANE_READY"
+        }
+      ]
+    }
+  }
+]

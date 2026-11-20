@@ -1,0 +1,48 @@
+{
+  "name": "react-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "start": "tsx server.ts",
+    "preview": "vite preview",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit",
+    "test": "tsx --test src/lib/opsEngine.test.ts src/lib/meditateFallback.test.ts src/lib/useVoiceRecorder.test.ts src/lib/promptBuilder.test.ts src/lib/validator.test.ts src/lib/meditateV2.test.ts src/lib/modelConfig.test.ts src/lib/phoneText.test.ts src/lib/geminiErrors.test.ts src/lib/planDates.test.ts src/lib/geminiRetry.test.ts src/lib/releaseEngine.test.ts src/lib/draftEditing.test.ts src/lib/myTasks.test.ts src/lib/cloudRecords.test.ts src/lib/setupWizard.test.ts src/lib/taskTypeAssignment.test.ts src/lib/weaknessPrivacy.test.ts src/lib/teamGraph.test.ts src/lib/teamImport.test.ts src/lib/demoData.test.ts src/lib/demoLeadsAnalytics.test.ts src/server/firebaseAdminEnv.test.ts src/lib/accessCheck.test.ts src/lib/taskTiming.test.ts src/lib/planOrder.test.ts src/lib/mustKnowFacts.test.ts src/lib/namesAndAccountable.test.ts src/lib/taskBrief.test.ts src/lib/screenFixes.test.ts src/lib/demoBanquet.test.ts src/lib/behindAlerts.test.ts src/lib/stepChecks.test.ts src/lib/ownerWhatsapp.test.ts src/lib/voiceNotes.test.ts src/lib/batch4.test.ts",
+    "eval": "tsx tests/golden/runEval.ts",
+    "eval:live": "tsx tests/golden/runEval.ts --live",
+    "tune": "tsx tests/tuning/runTuning.ts",
+    "tune:live": "tsx tests/tuning/runTuning.ts --live",
+    "tune:report": "tsx tests/tuning/runTuning.ts --report",
+    "models:check": "tsx scripts/checkModels.ts",
+    "eval:replies": "tsx tests/golden/runReplyEval.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@xyflow/react": "^12.12.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "firebase": "^13.2.0",
+    "firebase-admin": "^13.10.0",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "tsx": "^4.21.0",
+    "vite": "^8.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.28.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}

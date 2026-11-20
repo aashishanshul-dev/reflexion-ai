@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 56" fill="none">
+  <text x="4" y="40" fill="#14161F" font-family="Sora, Inter, system-ui, sans-serif" font-weight="300" font-size="36" letter-spacing="-1.6">refle</text>
+  <g transform="translate(88, 6) scale(0.74)">
+    <g stroke="#FF5B23" stroke-width="1.5" stroke-linecap="round">
+      <path d="M11 8C25 22 25 42 11 56"/>
+      <path d="M13 8C26.7 22 26.7 42 13 56"/>
+      <path d="M15 8C28.4 22 28.4 42 15 56"/>
+      <path d="M17 8C30.1 22 30.1 42 17 56"/>
+      <path d="M19 8C32 22 32 42 19 56"/>
+      <path d="M53 8C39 22 39 42 53 56"/>
+      <path d="M51 8C37.3 22 37.3 42 51 56"/>
+      <path d="M49 8C35.6 22 35.6 42 49 56"/>
+      <path d="M47 8C33.9 22 33.9 42 47 56"/>
+      <path d="M45 8C32 22 32 42 45 56"/>
+    </g>
+    <rect x="29.8" y="29.8" width="4.4" height="4.4" transform="rotate(45 32 32)" fill="#F7F6F2"/>
+  </g>
+  <text x="136" y="40" fill="#14161F" font-family="Sora, Inter, system-ui, sans-serif" font-weight="300" font-size="36" letter-spacing="-1.6">ion</text>
+  <text x="187" y="40" fill="#FF5B23" font-family="Sora, Inter, system-ui, sans-serif" font-weight="300" font-size="36" letter-spacing="-1.6">.ai</text>
+</svg>

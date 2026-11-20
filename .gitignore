@@ -1,0 +1,31 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+.aistudio/
+
+# Firebase service account keys (never commit)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+
+# Private team setup import file (never commit — contains private team details)
+allura-team-setup.json
+
+# Downloaded workspace backups (never commit — contain private team details)
+opscommand-backup-*.json
+
+# Tuning runner cache and temporary last-run artifact
+tests/tuning/.cache/
+tests/tuning/.last-run.json
+
+# Handoff packages for sharing (zip / git bundle)
+handoff/
+
+.antigravity/
+.claude/
+.vscode/
