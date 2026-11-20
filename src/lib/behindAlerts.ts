@@ -6,7 +6,13 @@
  */
 import type { OpsDatabaseState, PreferredLanguage, Task, TeamMember } from '../types/ops.ts';
 import { staffAddressName } from './staffNames.ts';
-import { describeTaskTiming, formatDueLabel, formatDuration, isTaskBehind } from './taskTiming.ts';
+import { describeTaskTiming, formatDueLabel, formatDuration, isTaskBehind, isTaskOpenForTiming } from './taskTiming.ts';
+import {
+  buildEscalationArtifacts,
+  resolveAccountableRecipient,
+  sanitizeOutboundText,
+  upsertOpenEscalationReview,
+} from './staffEscalation.ts';
 
 const DEFAULT_TENANT = 'default';
 
@@ -107,42 +113,75 @@ export function buildBehindAlertText(params: {
     .join('\n');
 }
 
+function hasReplySinceSent(state: Pick<OpsDatabaseState, 'whatsapp_messages'>, task: Task): boolean {
+  const sentMs = Date.parse(task.release?.releasedAt || task.lastOutboundAt || '');
+  return (state.whatsapp_messages || []).some((m) => {
+    if (m.direction !== 'INBOUND' || m.employeePhone !== task.raci?.R) return false;
+    if (m.taskCode && m.taskCode !== task.taskCode) return false;
+    const msgMs = Date.parse(m.timestamp);
+    return Number.isNaN(sentMs) || Number.isNaN(msgMs) || msgMs >= sentMs;
+  });
+}
+
 /**
  * Sends one alert per behind task to its Accountable person (not when they are the
  * Responsible person themself), marks it alerted, and logs it. A task that is late by
- * the clock with no reply gets a code-written reason first.
+ * the clock with no reply gets a code-written reason first. Also escalates urgent
+ * tasks that have received no reply by the pre-deadline threshold.
  */
 export function sendBehindAlerts(
   state: OpsDatabaseState,
   nowIso: string,
-  options: { onlyTaskCodes?: string[] } = {}
+  options: { onlyTaskCodes?: string[]; noResponseThresholdMinutes?: number } = {}
 ): { nextState: OpsDatabaseState; alertedTaskCodes: string[] } {
   const nowMs = Date.parse(nowIso);
   if (Number.isNaN(nowMs)) return { nextState: state, alertedTaskCodes: [] };
   const tz = state.business_profile?.timezone;
   const only = options.onlyTaskCodes ? new Set(options.onlyTaskCodes) : null;
+  const thresholdMins = options.noResponseThresholdMinutes ?? 120;
   const alertedTaskCodes: string[] = [];
   const newMessages: OpsDatabaseState['whatsapp_messages'] = [];
+  let nextQueue = [...(state.boss_review_queue || [])];
+  const roster = Object.values(state.team_members || {});
 
   const tasks = state.tasks.map((t) => {
     if (only && !only.has(t.taskCode)) return t;
-    if (!isTaskBehind(t, nowMs, tz) || t.scheduleRisk?.alertedAt) return t;
-    const accountable = state.team_members[t.raci?.A];
-    if (!accountable || t.raci.A === t.raci.R) return t;
+    if (t.scheduleRisk?.alertedAt) return t;
 
-    const timing = describeTaskTiming(t, nowMs, tz);
+    const behindNow = isTaskBehind(t, nowMs, tz);
+    const timing = describeTaskTiming(t, nowMs, tz, thresholdMins);
+    const isUrgentNoResponse =
+      !behindNow &&
+      t.quadrant === 'Q1_DO_FIRST' &&
+      isTaskOpenForTiming(t) &&
+      (t.status === 'PENDING' || t.status === 'IN_PROGRESS' || t.status === 'PARTIALLY_DONE') &&
+      timing.state === 'DUE_SOON' &&
+      !hasReplySinceSent(state, t);
+
+    if (!behindNow && !isUrgentNoResponse) return t;
+
+    const accountable =
+      (t.raci?.A ? state.team_members[t.raci.A] : undefined) ||
+      resolveAccountableRecipient(t, state.team_members, state.owner_profile);
+    if (!accountable || accountable.phone === t.raci?.R) return t;
+
     const risk = t.scheduleRisk || {
-      reason: `Past the deadline (${formatDueLabel(t)}) by ${formatDuration(timing.minutesLate)}; no update yet.`,
+      reason: isUrgentNoResponse
+        ? `No response yet with ${formatDuration(timing.minutesLeft)} left before deadline (${formatDueLabel(t)}).`
+        : `Past the deadline (${formatDueLabel(t)}) by ${formatDuration(timing.minutesLate)}; no update yet.`,
       flaggedAt: nowIso,
       reportedEta: null,
     };
     const flagged = { ...t, scheduleRisk: { ...risk, alertedAt: nowIso } };
-    const text = buildBehindAlertText({
-      task: flagged,
-      accountable,
-      responsible: state.team_members[t.raci.R],
-      related: findRelatedOpenItems(state, t),
-    });
+    const text = sanitizeOutboundText(
+      buildBehindAlertText({
+        task: flagged,
+        accountable,
+        responsible: state.team_members[t.raci.R],
+        related: findRelatedOpenItems(state, t),
+      }),
+      roster
+    );
     newMessages.push({
       tenantId: state.tenantId || DEFAULT_TENANT,
       id: `wa-behind-${t.taskCode}-${nowMs}`,
@@ -154,6 +193,44 @@ export function sendBehindAlerts(
       text,
     });
     alertedTaskCodes.push(t.taskCode);
+
+    if (isUrgentNoResponse) {
+      try {
+        const artifacts = buildEscalationArtifacts({
+          task: flagged,
+          responsible: state.team_members[t.raci.R],
+          accountable,
+          decision: {
+            shouldEscalate: true,
+            trigger: 'NO_RESPONSE',
+            isUrgent: true,
+            logDelayOnly: false,
+            quote: '',
+            reasonLabel: 'No response received before deadline threshold',
+            reviewType: 'BLOCKER_ESCALATION',
+          },
+          teamMembers: state.team_members,
+          nowMs,
+          timezone: tz,
+        });
+        nextQueue = upsertOpenEscalationReview({
+          queue: nextQueue,
+          taskCode: t.taskCode,
+          employeePhone: t.raci.R,
+          routedToPhone: accountable.phone,
+          trigger: 'NO_RESPONSE',
+          isUrgent: true,
+          reviewType: 'BLOCKER_ESCALATION',
+          summary: artifacts.summary,
+          mediaVerificationNote: 'Automated no-response escalation before deadline.',
+          suggestedReplies: artifacts.suggestedReplies,
+          nowIso,
+        }).nextQueue;
+      } catch {
+        // Non-fatal: behind alert is still sent even if review upsert fails.
+      }
+    }
+
     return {
       ...flagged,
       auditLogs: [
@@ -170,7 +247,12 @@ export function sendBehindAlerts(
 
   if (alertedTaskCodes.length === 0) return { nextState: state, alertedTaskCodes };
   return {
-    nextState: { ...state, tasks, whatsapp_messages: [...state.whatsapp_messages, ...newMessages] },
+    nextState: {
+      ...state,
+      tasks,
+      boss_review_queue: nextQueue,
+      whatsapp_messages: [...state.whatsapp_messages, ...newMessages],
+    },
     alertedTaskCodes,
   };
 }

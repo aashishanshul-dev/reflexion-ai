@@ -38,6 +38,16 @@ import { buildShortTaskBrief } from './taskBrief.ts';
 import { sendBehindAlerts } from './behindAlerts.ts';
 import { sendOwnerDecisionPrompts } from './ownerWhatsapp.ts';
 import { applyStepUpdate, completionFromSteps, enrichStep } from './stepChecks.ts';
+import {
+  buildEscalationArtifacts,
+  buildStaffEscalationAck,
+  buildStaffNormalAck,
+  enforceRecipientLanguageAndScript,
+  evaluateStaffReplyEscalation,
+  resolveAccountableRecipient,
+  sanitizeOutboundText,
+  upsertOpenEscalationReview,
+} from './staffEscalation.ts';
 
 export const MAX_SYSTEM_MEMORY_RULES = 30;
 export const MAX_VIDEO_SIZE_MB = 15;
@@ -1887,6 +1897,15 @@ export function applyProcessedBufferResult(
   }
 
   if (!matchedTask) {
+    const safeReply = enforceRecipientLanguageAndScript({
+      text: aiResult.whatsappReplyInPreferredLanguage,
+      language: member.preferredLanguage || state.business_profile?.defaultStaffLanguage || 'HINGLISH',
+      fallbackText: buildStaffNormalAck({
+        language: member.preferredLanguage || state.business_profile?.defaultStaffLanguage || 'HINGLISH',
+        recipient: member,
+      }),
+      roster: Object.values(state.team_members),
+    });
     return appendAiLogToState(
       {
         ...state,
@@ -1902,7 +1921,7 @@ export function applyProcessedBufferResult(
             direction: 'OUTBOUND',
             timestamp: nowIso,
             tag: 'AI_BATCH_REPLY',
-            text: aiResult.whatsappReplyInPreferredLanguage,
+            text: safeReply,
           },
         ],
       },
@@ -2006,38 +2025,108 @@ export function applyProcessedBufferResult(
       : Math.max(0, Math.min(100, Math.round(aiResult.completionPercent)));
   const allDone = mergedSteps.every((s) => s.status === 'DONE') && clampedPercent >= 100 && !aiResult.missingStepsAlert;
 
-  // Escalate to Boss Review if AI flagged it OR if partial handover gate needs Boss sign-off while steps are still missing
-  const shouldEscalate =
+  const rawBatchSummary = buffer.messages
+    .map((m) => (m.fileName ? `[${m.type}: ${m.fileName}] ${m.textContent || ''}` : m.textContent || ''))
+    .join(' | ');
+  const parsedNowMs = Date.parse(nowIso);
+  const safeNowMs = Number.isNaN(parsedNowMs) ? Date.now() : parsedNowMs;
+  const staffLang = member.preferredLanguage || state.business_profile?.defaultStaffLanguage || 'HINGLISH';
+  const rosterList = Object.values(state.team_members);
+
+  // Deterministic escalation detection + accountable routing (wrapped so a routing error
+  // never blocks recording the staff reply).
+  let shouldEscalate =
     aiResult.escalateToBossReview ||
     (hasDownstreamHandoverGate && clampedPercent >= 60 && !allDone);
-
-  const nextQueue = [...state.boss_review_queue];
+  let nextQueue = [...state.boss_review_queue];
   let createdReviewId: string | null = null;
+  let escalationRisk: Task['scheduleRisk'] | null = null;
+  let escalationTrigger: import('../types/ops.ts').EscalationSignal = 'NONE';
+  let logDelayOnly = false;
+  let accountableMember = resolveAccountableRecipient(matchedTask, state.team_members, state.owner_profile);
 
-  if (shouldEscalate) {
-    createdReviewId = `REV-${Date.now().toString().slice(-4)}`;
-    const rType =
-      aiResult.reviewType ||
-      (hasDownstreamHandoverGate ? 'PARTIAL_HANDOVER_GATE' : 'BLOCKER_ESCALATION');
-    nextQueue.unshift({
-      reviewId: createdReviewId,
-      taskCode: matchedTask.taskCode,
+  try {
+    const decision = evaluateStaffReplyEscalation({
+      task: matchedTask,
+      batchText: rawBatchSummary,
+      aiResult,
+      priorMessages: state.whatsapp_messages,
       employeePhone,
-      reviewType: rType,
-      employeeMessageSummary: aiResult.englishBossSummary,
-      mediaVerificationNote:
-        aiResult.mediaVerificationNote || 'Text batch analyzed chronologically (no media attached).',
-      aiSuggestedReplies:
-        aiResult.aiSuggestedReplies && aiResult.aiSuggestedReplies.length > 0
-          ? aiResult.aiSuggestedReplies
-          : [
-              `Approve handover on [${matchedTask.shortTag || matchedTask.taskCode}] and unlock next dependent task; submit pending receipt by evening.`,
-              `Hold handover until the required receipt or proof photo is uploaded on WhatsApp.`,
-              `Approved — proceed as proposed and confirm final step.`,
-            ],
-      status: 'OPEN',
-      createdAt: nowIso,
+      nowMs: safeNowMs,
+      timezone: state.business_profile?.timezone,
+      allDone,
     });
+    logDelayOnly = decision.logDelayOnly;
+    escalationTrigger = decision.trigger;
+
+    if (decision.shouldEscalate || (hasDownstreamHandoverGate && clampedPercent >= 60 && !allDone)) {
+      shouldEscalate = true;
+      const effectiveDecision =
+        decision.shouldEscalate
+          ? decision
+          : {
+              ...decision,
+              shouldEscalate: true,
+              trigger: 'BLOCKER' as const,
+              reviewType: 'PARTIAL_HANDOVER_GATE' as const,
+              reasonLabel: aiResult.englishBossSummary || 'Partial handover gate requires decision',
+            };
+      const artifacts = buildEscalationArtifacts({
+        task: matchedTask,
+        responsible: member,
+        accountable: accountableMember,
+        decision: effectiveDecision,
+        teamMembers: state.team_members,
+        nowMs: safeNowMs,
+        timezone: state.business_profile?.timezone,
+      });
+
+      const useAiSummary =
+        effectiveDecision.trigger === 'NONE' ||
+        (aiResult.escalateToBossReview &&
+          effectiveDecision.reviewType !== 'BLOCKER_ESCALATION');
+      const finalSummary = useAiSummary && aiResult.englishBossSummary
+        ? sanitizeOutboundText(aiResult.englishBossSummary, rosterList)
+        : artifacts.summary;
+      const finalSuggested =
+        aiResult.aiSuggestedReplies && aiResult.aiSuggestedReplies.length > 0 && useAiSummary
+          ? aiResult.aiSuggestedReplies.map((s) => sanitizeOutboundText(s, rosterList))
+          : artifacts.suggestedReplies;
+
+      const upserted = upsertOpenEscalationReview({
+        queue: nextQueue,
+        taskCode: matchedTask.taskCode,
+        employeePhone,
+        routedToPhone: accountableMember?.phone,
+        trigger: effectiveDecision.trigger,
+        isUrgent: effectiveDecision.isUrgent,
+        reviewType:
+          effectiveDecision.reviewType ||
+          (hasDownstreamHandoverGate ? 'PARTIAL_HANDOVER_GATE' : 'BLOCKER_ESCALATION'),
+        summary: finalSummary,
+        mediaVerificationNote:
+          aiResult.mediaVerificationNote || 'Text batch analyzed chronologically (no media attached).',
+        suggestedReplies: finalSuggested,
+        nowIso,
+      });
+      nextQueue = upserted.nextQueue;
+      createdReviewId = upserted.reviewId;
+
+      if (effectiveDecision.trigger !== 'NONE') {
+        escalationRisk = {
+          reason: sanitizeOutboundText(
+            `${effectiveDecision.reasonLabel}${effectiveDecision.quote ? `: "${effectiveDecision.quote}"` : ''}.`,
+            rosterList
+          ),
+          flaggedAt: nowIso,
+          reportedEta: aiResult.reportedEta ?? matchedTask.scheduleRisk?.reportedEta ?? null,
+          suggestedFix: finalSuggested[0] || aiResult.suggestedFix || null,
+          alertedAt: matchedTask.scheduleRisk?.alertedAt ?? null,
+        };
+      }
+    }
+  } catch (escErr) {
+    console.warn('[escalation] Non-fatal error while evaluating escalation:', escErr);
   }
 
   let nextStatus = matchedTask.status;
@@ -2052,27 +2141,54 @@ export function applyProcessedBufferResult(
     nextStatus = 'IN_PROGRESS';
   }
 
-  const rawBatchSummary = buffer.messages
-    .map((m) => (m.fileName ? `[${m.type}: ${m.fileName}] ${m.textContent || ''}` : m.textContent || ''))
-    .join(' | ');
-
   // Code decides "behind" from the clock; the AI only reports a delay and any finish time given.
-  const parsedNowMs = Date.parse(nowIso);
-  const assessedRisk = assessReplyScheduleRisk({
-    task: matchedTask,
-    allDone: nextStatus === 'COMPLETED',
-    delayReported: Boolean(aiResult.delayReported),
-    reportedEta: aiResult.reportedEta ?? matchedTask.scheduleRisk?.reportedEta ?? null,
-    suggestedFix: aiResult.suggestedFix ?? matchedTask.scheduleRisk?.suggestedFix ?? null,
-    nowMs: Number.isNaN(parsedNowMs) ? Date.now() : parsedNowMs,
-    timezone: state.business_profile?.timezone,
-  });
+  const baseAssessedRisk = logDelayOnly
+    ? matchedTask.scheduleRisk ?? null
+    : assessReplyScheduleRisk({
+        task: matchedTask,
+        allDone: nextStatus === 'COMPLETED',
+        delayReported: Boolean(aiResult.delayReported),
+        reportedEta: aiResult.reportedEta ?? matchedTask.scheduleRisk?.reportedEta ?? null,
+        suggestedFix: aiResult.suggestedFix ?? matchedTask.scheduleRisk?.suggestedFix ?? null,
+        nowMs: safeNowMs,
+        timezone: state.business_profile?.timezone,
+      });
+  const assessedRisk =
+    escalationTrigger === 'TIMELINE_SLIP' && baseAssessedRisk
+      ? baseAssessedRisk
+      : escalationRisk || baseAssessedRisk;
   // The Accountable person is told once per behind spell, not on every reply.
   const scheduleRisk =
     assessedRisk && matchedTask.scheduleRisk?.alertedAt
       ? { ...assessedRisk, alertedAt: matchedTask.scheduleRisk.alertedAt }
       : assessedRisk;
   const riskNote = scheduleRisk ? ` Behind: ${scheduleRisk.reason}` : '';
+
+  // Enforce single language + script on the outbound reply to the staff member.
+  // When escalated by deterministic trigger, ensure the reply explicitly tells the
+  // staff member that the manager/owner has been informed (never pretending it's resolved).
+  const ackFallback = shouldEscalate
+    ? buildStaffEscalationAck({
+        language: staffLang,
+        recipient: member,
+        accountableName: accountableMember?.name || 'the owner',
+        trigger: escalationTrigger,
+      })
+    : buildStaffNormalAck({ language: staffLang, recipient: member });
+
+  const mentionsInformed = /(inform|informed|bata diya|बता दिया|owner|manager|प्रबंधक|मैनेजर)/i.test(
+    aiResult.whatsappReplyInPreferredLanguage || ''
+  );
+  const rawStaffReply =
+    shouldEscalate && escalationTrigger !== 'NONE' && !mentionsInformed
+      ? ackFallback
+      : aiResult.whatsappReplyInPreferredLanguage;
+  const finalStaffReply = enforceRecipientLanguageAndScript({
+    text: rawStaffReply,
+    language: staffLang,
+    fallbackText: ackFallback,
+    roster: rosterList,
+  });
 
   const nextTasks = state.tasks.map((t) => {
     if (t.taskCode !== matchedTask.taskCode) return t;
@@ -2118,7 +2234,7 @@ export function applyProcessedBufferResult(
         timestamp: nowIso,
         tag: shouldEscalate ? 'BOSS_ESCALATION_HOLD' : 'AI_CONFIRMATION',
         taskCode: matchedTask.taskCode,
-        text: aiResult.whatsappReplyInPreferredLanguage,
+        text: finalStaffReply,
       },
     ],
   };

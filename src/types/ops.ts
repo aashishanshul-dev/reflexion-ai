@@ -273,6 +273,17 @@ export interface TaskScheduleRisk {
   alertedAt?: string | null;
 }
 
+export type EscalationSignal =
+  | 'NONE'
+  | 'REFUSAL'
+  | 'ON_LEAVE'
+  | 'TIMELINE_SLIP'
+  | 'REASSIGNMENT'
+  | 'BLOCKER'
+  | 'CAPACITY'
+  | 'CONFUSION'
+  | 'NO_RESPONSE';
+
 export type BossReviewType =
   | 'BUDGET_APPROVAL'
   | 'DESIGN_SELECTION'
@@ -284,6 +295,11 @@ export interface BossReviewItem {
   reviewId: string;
   taskCode: string;
   employeePhone: string;
+  /** Resolved Accountable person phone (manager first, then owner) for routing. */
+  routedToPhone?: string;
+  /** Escalation trigger that created or updated this review, if any. */
+  trigger?: EscalationSignal;
+  isUrgent?: boolean;
   reviewType: BossReviewType;
   employeeMessageSummary: string;
   mediaVerificationNote: string;
@@ -650,6 +666,10 @@ export interface BufferProcessAiResponse {
   missingStepsAlert: string;
   whatsappReplyInPreferredLanguage: string;
   escalateToBossReview: boolean;
+  /** Structured escalation signal detected by the reader; code enforces the escalation decision. */
+  escalationSignal?: EscalationSignal;
+  /** Short quote of the staff member's relevant words, if any. */
+  staffQuote?: string | null;
   reviewType?: BossReviewType;
   aiSuggestedReplies?: string[];
   /** The person said some of the work will finish later than planned. */

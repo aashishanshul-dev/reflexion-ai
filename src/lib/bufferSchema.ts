@@ -28,6 +28,21 @@ export const BUFFER_RESPONSE_SCHEMA = {
     missingStepsAlert: { type: Type.STRING },
     whatsappReplyInPreferredLanguage: { type: Type.STRING },
     escalateToBossReview: { type: Type.BOOLEAN },
+    escalationSignal: {
+      type: Type.STRING,
+      enum: [
+        'NONE',
+        'REFUSAL',
+        'ON_LEAVE',
+        'TIMELINE_SLIP',
+        'REASSIGNMENT',
+        'BLOCKER',
+        'CAPACITY',
+        'CONFUSION',
+      ],
+      nullable: true,
+    },
+    staffQuote: { type: Type.STRING, nullable: true },
     reviewType: {
       type: Type.STRING,
       enum: [

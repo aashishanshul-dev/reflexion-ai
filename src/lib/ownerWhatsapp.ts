@@ -9,6 +9,7 @@ import { buildMyTasks, buildOwnerDigestText, getOwnerPhones } from './myTasks.ts
 import { resolveBossReviewItem } from './opsEngine.ts';
 import { getZonedDateParts } from './releaseEngine.ts';
 import { staffAddressName } from './staffNames.ts';
+import { resolveAccountableRecipient, sanitizeOutboundText } from './staffEscalation.ts';
 
 const DEFAULT_TENANT = 'default';
 
@@ -75,7 +76,7 @@ export function buildOwnerDecisionPrompt(params: {
   return [head, params.review.employeeMessageSummary, ...options.map((o, i) => `${replyWord} ${i + 1}: ${o}`)].join('\n');
 }
 
-/** Sends a decision prompt to the owner(s) for every open decision not yet sent. */
+/** Sends a decision prompt to the Accountable person (manager first, else owner) for every open decision not yet sent. */
 export function sendOwnerDecisionPrompts(
   state: OpsDatabaseState,
   nowIso: string
@@ -83,7 +84,7 @@ export function sendOwnerDecisionPrompts(
   const owners = getOwnerPhones(state.team_members)
     .map((p) => state.team_members[p])
     .filter((m): m is TeamMember => Boolean(m));
-  if (owners.length === 0) return { nextState: state, sentReviewIds: [] };
+  const roster = Object.values(state.team_members || {});
   const alreadySent = new Set(
     (state.whatsapp_messages || []).filter((m) => m.tag === 'OWNER_DECISION_PROMPT').map((m) => m.id)
   );
@@ -91,24 +92,31 @@ export function sendOwnerDecisionPrompts(
   const sentReviewIds: string[] = [];
   for (const review of openReviewsOldestFirst(state.boss_review_queue)) {
     const task = state.tasks.find((t) => t.taskCode === review.taskCode);
+    const routedMember = review.routedToPhone ? state.team_members[review.routedToPhone] : undefined;
+    const recipients: TeamMember[] = routedMember ? [routedMember] : owners;
+    if (recipients.length === 0) continue;
+
     let sentAny = false;
-    for (const owner of owners) {
-      const id = `wa-decide-${review.reviewId}-${owner.phone}`;
+    for (const recipient of recipients) {
+      const id = `wa-decide-${review.reviewId}-${recipient.phone}`;
       if (alreadySent.has(id)) continue;
       newMessages.push({
         tenantId: state.tenantId || DEFAULT_TENANT,
         id,
-        employeePhone: owner.phone,
+        employeePhone: recipient.phone,
         direction: 'OUTBOUND',
         timestamp: nowIso,
         tag: 'OWNER_DECISION_PROMPT',
         taskCode: review.taskCode,
-        text: buildOwnerDecisionPrompt({
-          review,
-          tag: task?.shortTag || review.taskCode,
-          staffName: state.team_members[review.employeePhone]?.name || 'Team member',
-          owner,
-        }),
+        text: sanitizeOutboundText(
+          buildOwnerDecisionPrompt({
+            review,
+            tag: task?.shortTag || review.taskCode,
+            staffName: state.team_members[review.employeePhone]?.name || 'Team member',
+            owner: recipient,
+          }),
+          roster
+        ),
       });
       sentAny = true;
     }
