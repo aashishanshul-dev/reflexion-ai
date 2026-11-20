@@ -22,15 +22,13 @@ export function buildVoiceNoteSpeechText(text: string, dir: SlotDirectory): stri
     .trim();
 }
 
-const LANGUAGE_HINT: Record<PreferredLanguage, string> = {
-  HINDI: 'in natural Hindi (English words can stay as they are)',
-  HINGLISH: 'in natural Hinglish, the way people speak at work in India',
-  ENGLISH: 'in clear Indian English',
-};
-
-/** The instruction sent to the text-to-speech model. */
-export function buildVoiceNotePrompt(speechText: string, language: PreferredLanguage = 'HINDI'): string {
-  return `Read this WhatsApp task message aloud ${LANGUAGE_HINT[language] || LANGUAGE_HINT.HINDI}, warm and clear, like a supervisor's voice note. Read numbers and times naturally.\n\n${speechText}`;
+/**
+ * Text sent to Gemini TTS to be spoken aloud.
+ * Must contain ONLY the clean message text — never any instruction preamble,
+ * because Gemini TTS reads its entire input text aloud.
+ */
+export function buildVoiceNotePrompt(speechText: string, _language: PreferredLanguage = 'HINDI'): string {
+  return String(speechText || '').trim();
 }
 
 /** True when the speech text is safe to send (no team names or phone numbers left). */

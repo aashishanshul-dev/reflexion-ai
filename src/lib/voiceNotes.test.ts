@@ -19,10 +19,12 @@ test('buildVoiceNoteSpeechText drops names, phones, brackets, emojis and bullet 
   assert.equal(isVoiceNoteTextClean('Ramesh Choudhary', dir), false);
 });
 
-test('buildVoiceNotePrompt asks for a warm voice note in the person\'s language', () => {
-  assert.match(buildVoiceNotePrompt('Hello', 'HINDI'), /^Read this WhatsApp task message aloud in natural Hindi/);
-  assert.match(buildVoiceNotePrompt('Hello', 'HINGLISH'), /natural Hinglish/);
-  assert.match(buildVoiceNotePrompt('Hello', 'ENGLISH'), /clear Indian English[\s\S]*\n\nHello$/);
+test('buildVoiceNotePrompt returns only the clean message text with no instruction preamble', () => {
+  for (const lang of ['HINDI', 'HINGLISH', 'ENGLISH'] as const) {
+    const out = buildVoiceNotePrompt('जी हां, शाम 6 बजे तक सफाई पूरी कर लें।', lang);
+    assert.equal(out, 'जी हां, शाम 6 बजे तक सफाई पूरी कर लें।');
+    assert.doesNotMatch(out, /read this|aloud|whatsapp|supervisor|concise|natural hindi|indian english/i);
+  }
 });
 
 test('banquet story: Ramesh, Gopal and Mahesh prefer voice notes (slide 12: Voice · Hindi)', () => {
