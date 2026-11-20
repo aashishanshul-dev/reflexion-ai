@@ -28,6 +28,7 @@ import {
   resolveIntentConfidenceThreshold,
   resolveOwnerPreferredLanguage,
   routeMeditateV2Intent,
+  assessFollowUpRelevance,
 } from './src/lib/meditateV2.ts';
 import {
   buildAnonymizedBufferPrompt,
@@ -781,13 +782,54 @@ async function handleMeditateV2Request(params: {
   }
 
   // STAGE 2: PLANNER (runs ONLY for confirmed TASK with empty missingCritical)
-  const targetFollowUpId =
-    validatedIntent?.followUpForHeadId ?? priorFollowUpForHeadId ?? null;
-  const followUpHead = targetFollowUpId
+  let targetFollowUpId =
+    confirmedIntentKind === 'TASK'
+      ? priorFollowUpForHeadId ?? null
+      : (validatedIntent?.followUpForHeadId ?? priorFollowUpForHeadId ?? null);
+  let followUpHead = targetFollowUpId
     ? (Array.isArray(wbsHeads)
         ? wbsHeads.find((h: any) => h?.headId === targetFollowUpId)
         : null) || (activeHead?.headId === targetFollowUpId ? activeHead : null)
     : null;
+
+  if (!confirmedIntentKind && followUpHead) {
+    const relevance = assessFollowUpRelevance(brainDump, followUpHead);
+    if (relevance === 'UNRELATED') {
+      targetFollowUpId = null;
+      followUpHead = null;
+    } else if (relevance === 'AMBIGUOUS') {
+      const slotDirectory = buildSlotDirectory(teamMembers, ownerProfile);
+      const clarifyText = `New task, or add to "${followUpHead.title}"?`;
+      const clarifyResp = buildV2NonPlannerResponse({
+        route: 'AWAIT_OWNER_CONFIRMATION',
+        intent: {
+          kind: 'TASK',
+          confidence: validatedIntent?.confidence ?? 0.65,
+          missingCritical: [],
+          followUpForHeadId: followUpHead.headId,
+          replyToOwner: clarifyText,
+        },
+        replyToOwner: clarifyText,
+        rawBrainDump: brainDump,
+        slotDirectory,
+        confirmChips: [
+          { label: 'Start new plan', kind: 'TASK', followUpForHeadId: null },
+          {
+            label: `Add to "${String(followUpHead.title || '').slice(0, 28)}"`,
+            kind: 'TASK',
+            followUpForHeadId: followUpHead.headId,
+          },
+        ],
+      });
+      return {
+        ...clarifyResp,
+        modelUsed: lastModelUsed,
+        meditateEngineUsed: 'v2' as const,
+        aiLog: aiLogs[aiLogs.length - 1],
+        aiLogs,
+      };
+    }
+  }
 
   const plannerBuilt = buildAnonymizedPlannerPrompt({
     dateContext: buildDateContextLine(businessTodayIso(businessProfile?.timezone)),

@@ -77,7 +77,11 @@ import {
   newBlankDraft,
   quickDraftAsHead,
   removeDraftFromHead,
-  renameHead, withGeneratedDraftMessages } from '../lib/draftEditing';
+  renameHead,
+  reopenHeadForEditing,
+  splitTaskIntoNewHead,
+  withGeneratedDraftMessages,
+} from '../lib/draftEditing';
 import { DraftTaskEditor } from './DraftTaskEditor';
 import { summarizeWbsHeadRelease } from '../lib/releaseEngine';
 import { runMeditateAgentApi } from '../services/dataService';
@@ -552,13 +556,15 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
         // topic never overwrites an old plan.
         const existingHeadIds = new Set(wbsHeads.map((h) => h.headId));
         const takenHeadIds = new Set(existingHeadIds);
+        const isExplicitFollowUp = (rawId: string) =>
+          !safeAiRes.v2Intent || safeAiRes.v2Intent.followUpForHeadId === rawId;
         const finalHeadId = (rawId: string) => {
           const base = isQuickDraftHeadId(rawId)
             ? `HEAD-${batchTs.toString(36).toUpperCase()}` // quick task grown into a plan
-            : existingHeadIds.has(rawId) && rawId !== activeHeadId
+            : existingHeadIds.has(rawId) && (rawId !== activeHeadId || !isExplicitFollowUp(rawId))
               ? `${rawId}-${batchTs.toString(36).slice(-5).toUpperCase()}`
               : rawId;
-          if (base === activeHeadId) return base; // refining: keep the plan's own label
+          if (base === activeHeadId && isExplicitFollowUp(rawId)) return base; // refining: keep the plan's own label
           // Short readable label (HEAD-3) instead of a raw AI-made ID.
           const short = toShortHeadId(base, takenHeadIds);
           takenHeadIds.add(short);
@@ -753,7 +759,10 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
         sampleBrainDumps: state.sample_brain_dumps,
         modelTuning: state.model_tuning,
         conversationHistory: historyPayload,
-        activeHead: activeHeadId ? currentHead : quickRefineHead,
+        activeHead:
+          activeHeadId && currentHead?.status !== 'FROZEN_DISPATCHED'
+            ? currentHead
+            : quickRefineHead,
         wbsHeads: quickRefineHead ? [...wbsHeads, quickRefineHead] : wbsHeads,
       });
 
@@ -792,7 +801,10 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
         brainDump: sourceText,
         confirmedIntentKind: chip.kind,
         priorMissingCritical: targetMsg.priorMissingCritical || [],
-        priorFollowUpForHeadId: targetMsg.priorFollowUpForHeadId ?? null,
+        priorFollowUpForHeadId:
+          chip.followUpForHeadId !== undefined
+            ? chip.followUpForHeadId
+            : (targetMsg.priorFollowUpForHeadId ?? null),
         teamMembers: membersList,
         tasks: state.tasks,
         categorySops: state.category_sops,
@@ -804,7 +816,10 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
         sampleBrainDumps: state.sample_brain_dumps,
         modelTuning: state.model_tuning,
         conversationHistory: historyPayload,
-        activeHead: activeHeadId ? currentHead : quickRefineHead,
+        activeHead:
+          activeHeadId && currentHead?.status !== 'FROZEN_DISPATCHED'
+            ? currentHead
+            : quickRefineHead,
         wbsHeads: quickRefineHead ? [...wbsHeads, quickRefineHead] : wbsHeads,
       });
 
@@ -1003,6 +1018,22 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
     if (activeHeadId === headId) setActiveHeadId(null);
     setConfirmDeleteHeadId(null);
     onNotify(`Deleted plan "${head.title}" and its ${head.subTasks?.length || 0} draft task(s). Nothing was sent.`);
+  };
+
+  const handleReopenHead = (headId: string) => {
+    const head = wbsHeads.find((h) => h.headId === headId);
+    if (!head) return;
+    const reopened = reopenHeadForEditing(head);
+    updateAndSyncWbsHeads(wbsHeads.map((h) => (h.headId === headId ? reopened : h)));
+    onNotify(`Reopened "${head.title}" for editing. Nothing will be sent until you click Approve & send.`);
+  };
+
+  const handleSplitSubTaskToNewHead = (headId: string, tempId: string) => {
+    const { heads: nextHeads, newHeadId } = splitTaskIntoNewHead(wbsHeads, headId, tempId);
+    if (!newHeadId) return;
+    updateAndSyncWbsHeads(nextHeads);
+    setActiveHeadId(newHeadId);
+    onNotify('Moved task into its own new plan.');
   };
 
   const currentHeadCheck = useMemo(
@@ -1389,7 +1420,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                   }`}
                 >
                   <span className="truncate font-medium">
-                    {currentHead ? (
+                    {currentHead && currentHead.status !== 'FROZEN_DISPATCHED' ? (
                       <>
                         Changing project: <strong>[{currentHead.title}]</strong>
                       </>
@@ -1685,6 +1716,20 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
           {/* Level 2: 1-Tap Quick Dispatch Card (for Single-Person Task) & Dynamic Swimlane Canvas */}
           {currentHead && (
             <div className="space-y-4">
+              {currentHead.status === 'FROZEN_DISPATCHED' && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn-border bg-warn-soft px-4 py-3 text-xs">
+                  <span className="text-ink font-medium">
+                    This plan was already sent. Reopen it to edit titles, steps, assignees, or dates (nothing is re-sent until you click Approve &amp; send).
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleReopenHead(currentHead.headId)}
+                    className="shrink-0 rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs font-bold text-ink hover:bg-paper transition-colors"
+                  >
+                    Reopen to edit
+                  </button>
+                </div>
+              )}
               {(currentHead.subTasks?.length || 0) === 1 && currentHead.subTasks?.[0] && (
                 <div className="rounded-2xl border-2 border-signal bg-surface p-5 shadow-[var(--shadow-card)]">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2031,7 +2076,18 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
 
                   {(currentHead.subTasks?.length || 0) !== 1 &&
                     (currentHead.subTasks || []).map((t) => (
-                      <div key={t.tempId} id={`draft-editor-${t.tempId}`}>
+                      <div key={t.tempId} id={`draft-editor-${t.tempId}`} className="space-y-1">
+                        {(currentHead.subTasks?.length || 0) > 1 && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSplitSubTaskToNewHead(currentHead.headId, t.tempId)}
+                              className="text-[11px] font-semibold text-slate hover:text-ink underline underline-offset-2"
+                            >
+                              Move to new plan
+                            </button>
+                          </div>
+                        )}
                         <DraftTaskEditor
                           draft={t}
                           teamMembers={state.team_members}

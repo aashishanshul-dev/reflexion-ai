@@ -628,3 +628,72 @@ export function mergeRefinedQuickDraft(params: {
   const draft = merged.subTasks.find((t) => t.tempId === params.previous.tempId) || merged.subTasks[0];
   return draft ? { ...draft, wbsHeadId: null } : null;
 }
+
+/** Reopens a FROZEN_DISPATCHED head back to SWIMLANE_READY for safe editing without re-sending. */
+export function reopenHeadForEditing(head: WbsHead): WbsHead {
+  if (head.status !== 'FROZEN_DISPATCHED') return head;
+  return {
+    ...head,
+    status: 'SWIMLANE_READY',
+  };
+}
+
+/**
+ * Extracts a single draft task from a multi-task WbsHead into its own new
+ * SWIMLANE_READY WbsHead so mistakenly merged tasks can be separated cleanly.
+ */
+export function splitTaskIntoNewHead(
+  heads: WbsHead[],
+  sourceHeadId: string,
+  tempId: string,
+  nowTs: number = Date.now()
+): { heads: WbsHead[]; newHeadId: string | null } {
+  const source = heads.find((h) => h.headId === sourceHeadId);
+  const task = source?.subTasks?.find((t) => t.tempId === tempId);
+  if (!source || !task || (source.subTasks?.length || 0) <= 1) {
+    return { heads, newHeadId: null };
+  }
+
+  const taken = new Set(heads.map((h) => h.headId));
+  let n = heads.length + 1;
+  let newHeadId = `HEAD-${n}`;
+  while (taken.has(newHeadId)) {
+    n += 1;
+    newHeadId = `HEAD-${n}-${nowTs.toString(36).slice(-3).toUpperCase()}`;
+  }
+
+  const remaining = source.subTasks.filter((t) => t.tempId !== tempId);
+  const updatedSource: WbsHead = {
+    ...source,
+    subTasks: remaining,
+    involvedPhones: Array.from(new Set(remaining.map((t) => t.raci?.R).filter(Boolean))),
+  };
+
+  const splitHead: WbsHead = {
+    headId: newHeadId,
+    title: task.title || task.shortTag || 'New Plan',
+    domainCategory: task.categoryId || source.domainCategory,
+    quadrant: task.quadrant || source.quadrant,
+    majorOrMinor: task.majorOrMinor || source.majorOrMinor,
+    contextSummary: task.title || source.contextSummary,
+    tentativeDurationDays: task.durationDays || 1,
+    tentativeStartDate: task.startDate || task.dueDate,
+    tentativeDeadline: task.dueDate,
+    isForcedDeadline: false,
+    dynamicStages: [task.swimlaneStage || 'Execution'],
+    involvedPhones: task.raci?.R ? [task.raci.R] : [],
+    status: 'SWIMLANE_READY',
+    subTasks: [
+      {
+        ...task,
+        wbsHeadId: newHeadId,
+        dependsOnTempIdOrTaskCode: null,
+      },
+    ],
+  };
+
+  return {
+    heads: [...heads.map((h) => (h.headId === sourceHeadId ? updatedSource : h)), splitHead],
+    newHeadId,
+  };
+}

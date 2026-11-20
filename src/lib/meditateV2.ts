@@ -883,7 +883,7 @@ INTENT KINDS:
    - MUST-KNOW FACTS (when a MUST-KNOW FACTS BY TASK TYPE list is given): if the work belongs to a listed task type, check each listed fact against the owner's message, the conversation so far, approved memory and the business profile. Add every fact that is still unknown to "missingCritical" in plain words. Never fill one in by guessing. This list adds to the rule above; it never replaces it.
    - If the owner says to go ahead without the missing facts (for example "plan it anyway" or "baad mein bata dunga"), set "missingCritical" to [] and plan with what is known.
    - If "missingCritical" is non-empty, write ONE concise combined clarifying question in "replyToOwner" covering the missing items.
-   - Set "followUpForHeadId" ONLY if the owner is clearly following up on or modifying one of the existing WBS Heads listed in EXISTING WBS HEADS; otherwise set "followUpForHeadId" to null.
+   - Set "followUpForHeadId" ONLY if the owner is clearly modifying or adding to one of the existing WBS Heads listed in EXISTING WBS HEADS (same topic/domain/workstream). If the owner's message is about a DIFFERENT topic (for example, staff salary vs van rental), set "followUpForHeadId" to null so a NEW plan is created. Never set "followUpForHeadId" to a FROZEN_DISPATCHED head.
 2. "NOTE": The owner is recording an observation, serial number, reference fact, or memo for future reference without requesting an active task or standing policy rule.
 3. "RULE": The owner is stating a standing operational rule, policy, vendor constraint, or recurring preference ("From now on...", "Never...", "Always..."). Set "ruleCategory" to BUSINESS_RULE, VENDOR_FACT, STAFF_TRAIT, or SOP_PREFERENCE.
 4. "QUESTION": The owner is asking a status or workload question about current tasks or team operations. Answer accurately in "replyToOwner" using CURRENT TASK BOARD DATA, ANONYMIZED TEAM SLOTS, EXISTING WBS HEADS, APPROVED SYSTEM MEMORY, and BUSINESS PROFILE without inventing facts. If the provided data does not contain the answer, say so plainly (for example: "I don't have that information in the current board or team data.") — never guess or make something up.
@@ -906,9 +906,13 @@ CONFIDENCE & SLOT PRIVACY:
     params.maxRecentConversationTurns ?? MAX_CONVERSATION_TURNS_CAP
   );
 
-  const focusedNote = params.activeHead?.headId
-    ? `\nCURRENTLY SELECTED UI HEAD ID: ${params.activeHead.headId} (Only use as followUpForHeadId if the owner's message actually refers to it; otherwise return null.)`
-    : '';
+  const focusedNote =
+    params.activeHead?.headId && params.activeHead.status !== 'FROZEN_DISPATCHED'
+      ? `\nCURRENTLY SELECTED UI HEAD ID: ${params.activeHead.headId} ("${scrubPiiToSlots(
+          params.activeHead.title,
+          slotDirectory
+        )}"). ONLY set followUpForHeadId = "${params.activeHead.headId}" if the owner's message is clearly about this same project; if it is a new/different topic, set followUpForHeadId = null.`
+      : '';
 
   const scrubbedBrainDump = scrubPiiToSlots(params.brainDump, slotDirectory);
 
@@ -1180,4 +1184,76 @@ export function buildV2NonPlannerResponse(params: {
   }
 
   return base;
+}
+
+const TOPIC_STOP_WORDS = new Set([
+  'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'also', 'make', 'send',
+  'check', 'verify', 'task', 'plan', 'project', 'work', 'please', 'karo', 'karna',
+  'banao', 'karwa', 'dena', 'bhai', 'kal', 'aaj', 'sab', 'saare', 'main', 'nahi',
+  'hai', 'hoga', 'isko', 'uska', 'wale', 'wali', 'baje', 'tak', 'par', 'aur', 'mein',
+  'kiya', 'chahiye', 'baad', 'pehle', 'all', 'before', 'after',
+]);
+
+function extractTopicKeywords(text: string): Set<string> {
+  const tokens = String(text || '')
+    .toLowerCase()
+    .split(/[^a-z0-9\u0900-\u097f]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 3 && !TOPIC_STOP_WORDS.has(t));
+  return new Set(tokens);
+}
+
+/**
+ * Guards against merging an unrelated brain dump into an active/frozen project.
+ * - FROZEN_DISPATCHED or missing head -> 'UNRELATED'
+ * - Explicit refinement phrasing or keyword overlap -> 'SAME_TOPIC'
+ * - Short ambiguous message (<= 6 words) -> 'AMBIGUOUS' (ask owner)
+ * - Multi-word different topic with zero overlap -> 'UNRELATED' (new plan)
+ */
+export function assessFollowUpRelevance(
+  brainDump: string,
+  candidateHead:
+    | {
+        headId?: string;
+        title?: string;
+        status?: string;
+        contextSummary?: string;
+        subTasks?: Array<{ shortTag?: string; title?: string }>;
+      }
+    | null
+    | undefined
+): 'SAME_TOPIC' | 'AMBIGUOUS' | 'UNRELATED' {
+  if (!candidateHead || candidateHead.status === 'FROZEN_DISPATCHED') {
+    return 'UNRELATED';
+  }
+  const dump = String(brainDump || '').trim();
+  if (!dump) return 'UNRELATED';
+
+  if (
+    /\b(add to|also add|change|update|remove|delete|move|reassign|instead|extend|rename|split|that project|this project|same project|this plan|same plan|is project|isme|usme|uski deadline|iska)\b/i.test(
+      dump
+    )
+  ) {
+    return 'SAME_TOPIC';
+  }
+
+  const headCorpus = [
+    candidateHead.title,
+    candidateHead.contextSummary || '',
+    ...(candidateHead.subTasks || []).map((t) => `${t.shortTag || ''} ${t.title || ''}`),
+  ].join(' ');
+  const headWords = extractTopicKeywords(headCorpus);
+  const dumpWords = extractTopicKeywords(dump);
+
+  for (const w of dumpWords) {
+    if (headWords.has(w)) {
+      return 'SAME_TOPIC';
+    }
+  }
+
+  const wordCount = dump.split(/\s+/).filter(Boolean).length;
+  if (wordCount <= 6) {
+    return 'AMBIGUOUS';
+  }
+  return 'UNRELATED';
 }

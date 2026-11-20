@@ -13,6 +13,8 @@ import {
   normalizeOwnerEditOverrides,
   removeDraftFromHead,
   renameHead,
+  reopenHeadForEditing,
+  splitTaskIntoNewHead,
 } from './draftEditing';
 import { recalculateWbsHeadDates } from './opsEngine';
 import { MeditateDraftTaskInput, TeamMember, WbsHead } from '../types/ops';
@@ -407,4 +409,30 @@ test('refining a quick task keeps the owner\'s edits, like plans', async () => {
     mergeRefinedQuickDraft({ previous: quick, refined: draft({ tempId: 'draft-new-1', title: 'Something else' }), teamMembers: team }),
     null
   );
+});
+
+test('reopenHeadForEditing and splitTaskIntoNewHead allow fixing frozen or wrongly merged plans', () => {
+  const merged = head(
+    [
+      draft({ tempId: 'van-1', title: 'Book extra van', shortTag: 'Van Rental' }),
+      draft({ tempId: 'sal-1', title: 'Prepare staff salary sheet', shortTag: 'Salary Sheet', raci: { R: '10003', A: '10002', C: [], I: [] } }),
+    ],
+    { headId: 'HEAD-1', status: 'FROZEN_DISPATCHED', title: 'Extra Van Rental & Salary' }
+  );
+
+  const reopened = reopenHeadForEditing(merged);
+  assert.equal(reopened.status, 'SWIMLANE_READY');
+
+  const edited = applyDraftEdit(reopened.subTasks[0], { title: 'Book 2 extra vans' }, team).draft;
+  assert.equal(edited.title, 'Book 2 extra vans');
+
+  const { heads, newHeadId } = splitTaskIntoNewHead([reopened], 'HEAD-1', 'sal-1', 123456);
+  assert.ok(newHeadId);
+  assert.equal(heads.length, 2);
+  assert.equal(heads[0].subTasks.length, 1);
+  assert.equal(heads[0].subTasks[0].tempId, 'van-1');
+  assert.equal(heads[1].headId, newHeadId);
+  assert.equal(heads[1].status, 'SWIMLANE_READY');
+  assert.equal(heads[1].subTasks[0].tempId, 'sal-1');
+  assert.equal(heads[1].subTasks[0].wbsHeadId, newHeadId);
 });

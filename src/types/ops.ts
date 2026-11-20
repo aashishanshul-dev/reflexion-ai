@@ -574,8 +574,9 @@ export type MeditateV2RouteOutcome =
   | 'CASUAL_REPLY';
 
 export interface MeditateConfirmChip {
-  label: 'Make it a task' | 'Save as note' | 'Add as rule' | 'Just chatting';
+  label: string;
   kind: 'TASK' | 'NOTE' | 'RULE' | 'CASUAL';
+  followUpForHeadId?: string | null;
 }
 
 export interface MeditateIntentStageOutput {

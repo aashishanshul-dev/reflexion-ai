@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   answerQuestionFromTasksFallback,
+  assessFollowUpRelevance,
   buildAnonymizedIntentPrompt,
   buildAnonymizedPlannerPrompt,
   buildCombinedClarifyingQuestion,
@@ -175,8 +176,8 @@ function makeEmptySyntheticState(): OpsDatabaseState {
       maxRecentConversationTurns: 8,
       intentConfidenceThreshold: 0.75,
       meditate: {
-        model: 'gemini-flash-latest',
-        fallbackModel: 'gemini-flash-lite-latest',
+        model: 'gemini-flash-lite-latest',
+        fallbackModel: 'gemini-flash-latest',
         temperature: 0.2,
         maxOutputTokens: 4096,
       },
@@ -187,8 +188,8 @@ function makeEmptySyntheticState(): OpsDatabaseState {
         maxOutputTokens: 1024,
       },
       planner: {
-        model: 'gemini-flash-latest',
-        fallbackModel: 'gemini-flash-lite-latest',
+        model: 'gemini-flash-lite-latest',
+        fallbackModel: 'gemini-flash-latest',
         temperature: 0.2,
         maxOutputTokens: 4096,
       },
@@ -635,6 +636,66 @@ test('buildV2NonPlannerResponse, answerQuestionFromTasksFallback, notes helpers,
   const plannerCfg = resolveStageModelConfig('PLANNER', state.model_tuning);
   assert.equal(intentCfg.model, 'gemini-flash-lite-latest');
   assert.equal(intentCfg.temperature, 0.1);
-  assert.equal(plannerCfg.model, 'gemini-flash-latest');
+  assert.equal(plannerCfg.model, 'gemini-flash-lite-latest');
   assert.equal(plannerCfg.temperature, 0.2);
+});
+
+test('assessFollowUpRelevance separates unrelated topics, preserves genuine refinement, and asks when ambiguous', () => {
+  const vanHead = {
+    headId: 'HEAD-VAN',
+    title: 'Extra Van Rental & Monthly Client Billing',
+    status: 'SWIMLANE_READY' as const,
+    contextSummary: 'Arrange extra van rental and complete monthly client billing.',
+    subTasks: [
+      {
+        tempId: 't1',
+        title: 'Book extra van for delivery',
+        shortTag: 'Van Rental',
+        categoryId: 'OPS',
+        quadrant: 'Q1_DO_FIRST' as const,
+        majorOrMinor: 'MINOR' as const,
+        taskFrequency: 'ONE_TIME' as const,
+        recurrenceRule: 'NONE' as const,
+        raci: { R: '911', A: '910', C: [], I: [] },
+        startDate: '2026-11-20',
+        durationDays: 1,
+        dueDate: '2026-11-21',
+        microSteps: [],
+      },
+    ],
+  };
+
+  // Unrelated salary sheet brain dump -> UNRELATED (must start a NEW project, not merge)
+  assert.equal(
+    assessFollowUpRelevance(
+      'kal saare staff ki salary sheet banao aur verify karo jo staff 8 taarik ke baad nahi aaya main uski salary nahi dunga',
+      vanHead
+    ),
+    'UNRELATED'
+  );
+
+  // Genuine refinement -> SAME_TOPIC
+  assert.equal(
+    assessFollowUpRelevance('Van rental ka pickup time 8 baje kar do', vanHead),
+    'SAME_TOPIC'
+  );
+  assert.equal(
+    assessFollowUpRelevance('Also add invoice check to this project', vanHead),
+    'SAME_TOPIC'
+  );
+
+  // Short ambiguous follow-up -> AMBIGUOUS (asks owner)
+  assert.equal(
+    assessFollowUpRelevance('Send a reminder at 5pm', vanHead),
+    'AMBIGUOUS'
+  );
+
+  // Frozen project -> never silently merged
+  assert.equal(
+    assessFollowUpRelevance('Van rental ka pickup time 8 baje kar do', {
+      ...vanHead,
+      status: 'FROZEN_DISPATCHED',
+    }),
+    'UNRELATED'
+  );
 });
