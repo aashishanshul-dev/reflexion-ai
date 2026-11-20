@@ -44,7 +44,8 @@ import {
 import { appendAiLogToState } from './src/lib/opsEngine.ts';
 import { BUFFER_RESPONSE_SCHEMA } from './src/lib/bufferSchema.ts';
 import { buildVoiceNotePrompt, buildVoiceNoteSpeechText, isVoiceNoteTextClean } from './src/lib/voiceNotes.ts';
-import { GEMINI_TTS_MODELS } from './src/lib/modelConfig.ts';
+import { transcribeAudioClip } from './src/lib/voiceInput.ts';
+import { GEMINI_MODELS, GEMINI_TTS_MODELS } from './src/lib/modelConfig.ts';
 import {
   buildPlainReleaseWhatsappMessage,
   buildReleaseSettingsFromState,
@@ -1720,6 +1721,39 @@ async function startServer() {
       res.json({ audioBase64: part.inlineData.data, mimeType: part.inlineData.mimeType || 'audio/wav', modelUsed });
     } catch (err: any) {
       res.status(502).json({ error: err?.message || 'Could not make the voice note.' });
+    }
+  });
+
+  app.post('/api/ai/transcribe', async (req, res) => {
+    const { audioBase64, mimeType = 'audio/webm' } = req.body || {};
+    if (typeof audioBase64 !== 'string' || !audioBase64.trim()) {
+      res.status(400).json({ error: 'No audio recorded.' });
+      return;
+    }
+    const apiKey = getConfiguredApiKey();
+    if (!apiKey) {
+      res.status(503).json({ error: 'Voice transcription needs a Gemini API key on the server.' });
+      return;
+    }
+    try {
+      const ai = createGeminiClient(apiKey);
+      const { text, modelUsed } = await transcribeAudioClip({
+        audioBase64,
+        mimeType,
+        generate: async (parts) => {
+          const { response, modelUsed: used } = await generateWithFallbackModel(
+            ai,
+            GEMINI_MODELS.fast,
+            GEMINI_MODELS.balanced,
+            { parts },
+            { temperature: 0.1, maxOutputTokens: 1024 }
+          );
+          return { text: response.text ?? '', modelUsed: used };
+        },
+      });
+      res.json({ text, modelUsed });
+    } catch (err: any) {
+      res.status(502).json({ error: err?.message || 'Could not transcribe voice note — please type instead.' });
     }
   });
 

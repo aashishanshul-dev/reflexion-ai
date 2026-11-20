@@ -23,9 +23,17 @@ import {
   OpsDatabaseState,
 } from '../types/ops';
 import { isWithin24HrWindow, validateMediaAttachment } from '../lib/opsEngine';
-import { fetchVoiceNoteApi, runBufferBatchProcessorApi } from '../services/dataService';
+import { fetchVoiceNoteApi, runBufferBatchProcessorApi, transcribeAudioApi } from '../services/dataService';
 import { pickDefaultChatPhone } from '../lib/simulatorChat';
 import { ensureWavAudio } from '../lib/voiceNotes';
+import {
+  buildRecordedAudioBufferItem,
+  isMicPermissionError,
+  MIC_BLOCKED_MESSAGE,
+  MIC_UNSUPPORTED_MESSAGE,
+  pickSupportedAudioMimeType,
+  stripDataUrlPrefix,
+} from '../lib/voiceInput';
 
 interface WhatsAppSimulatorDrawerProps {
   isOpen: boolean;
@@ -167,18 +175,20 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
     }
   }, [state.team_members, selectedPhone, personaOptions, fallbackAllMembers]);
 
-  // Real voice recording state
+  // Real voice recording state (MediaRecorder)
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceDuration, setVoiceDuration] = useState(0);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [showVoicePresets, setShowVoicePresets] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const baseVoiceTextRef = useRef<string>('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordedMimeRef = useRef<string>('audio/webm');
+  const recordingDurationRef = useRef<number>(0);
+  const recordingDiscardedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -347,137 +357,164 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
   };
 
   const startVoiceRecording = async () => {
-    const initialText = messageInput.trim();
-    baseVoiceTextRef.current = initialText;
-    setVoiceTranscript(initialText);
-    setVoiceDuration(0);
-    setIsRecordingVoice(true);
+    if (isRecordingVoice || mediaRecorderRef.current) return;
     setShowVoicePresets(false);
 
-    // Request microphone access via getUserMedia
-    let hasMediaStream = false;
+    if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      onNotify(MIC_UNSUPPORTED_MESSAGE);
+      return;
+    }
+
     try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaStreamRef.current = stream;
-        hasMediaStream = true;
-      }
-    } catch (err: any) {
-      console.warn('Microphone permission request error in drawer:', err);
-    }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      audioChunksRef.current = [];
+      recordingDiscardedRef.current = false;
+      recordingDurationRef.current = 0;
 
-    // Try SpeechRecognition with zero-stutter loop
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRec) {
-      try {
-        const rec = new SpeechRec();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.lang = 'en-IN'; // Indian English & Hinglish accent
+      const chosenMime = pickSupportedAudioMimeType((m) => MediaRecorder.isTypeSupported(m));
+      const recorder = chosenMime
+        ? new MediaRecorder(stream, { mimeType: chosenMime })
+        : new MediaRecorder(stream);
+      recordedMimeRef.current = recorder.mimeType || chosenMime || 'audio/webm';
 
-        rec.onresult = (event: any) => {
-          let finalTranscript = '';
-          let interimTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            const item = event.results[i];
-            const piece = item[0]?.transcript || '';
-            if (item.isFinal) {
-              finalTranscript += piece;
-            } else {
-              interimTranscript += piece;
+      recorder.ondataavailable = (evt: BlobEvent) => {
+        if (evt.data && evt.data.size > 0) {
+          audioChunksRef.current.push(evt.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
+        mediaRecorderRef.current = null;
+        setIsRecordingVoice(false);
+        setVoiceDuration(0);
+        onNotify('Could not record audio — please type instead.');
+      };
+
+      recorder.onstop = () => {
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
+        mediaRecorderRef.current = null;
+
+        if (recordingDiscardedRef.current) {
+          audioChunksRef.current = [];
+          return;
+        }
+
+        const blob = new Blob(audioChunksRef.current, { type: recordedMimeRef.current });
+        audioChunksRef.current = [];
+        const dur = Math.max(1, recordingDurationRef.current || 1);
+
+        if (blob.size === 0) {
+          onNotify('No audio captured — try again or type instead.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const resultStr = typeof reader.result === 'string' ? reader.result : '';
+          const base64Clean = stripDataUrlPrefix(resultStr);
+          if (!base64Clean) {
+            onNotify('Could not read recorded audio — please type instead.');
+            return;
+          }
+
+          if (isOwnerChat && onOwnerMessage) {
+            try {
+              const { text } = await transcribeAudioApi({
+                audioBase64: base64Clean,
+                mimeType: recordedMimeRef.current,
+              });
+              if (!text.trim()) {
+                onNotify('No speech detected — try again or type instead.');
+                return;
+              }
+              onOwnerMessage(selectedPhone, text.trim());
+              setMessageInput('');
+            } catch {
+              onNotify('Could not transcribe voice note — please type instead.');
             }
+            return;
           }
-          const spoken = `${finalTranscript}${interimTranscript}`.trim();
-          if (spoken) {
-            const base = baseVoiceTextRef.current.trim();
-            const delimiter = base ? ' ' : '';
-            setVoiceTranscript(base ? `${base}${delimiter}${spoken}` : spoken);
-          }
-        };
 
-        rec.onerror = (e: any) => {
-          console.warn('SpeechRec error in drawer:', e?.error);
-          if (e?.error === 'not-allowed') {
-            onNotify('Microphone permission blocked in browser. Using quick voice assistant.');
-          }
+          const caption = messageInput.trim();
+          onEnqueueMessage(
+            selectedPhone,
+            buildRecordedAudioBufferItem({
+              base64Data: base64Clean,
+              mimeType: recordedMimeRef.current,
+              durationSec: dur,
+              caption: caption || undefined,
+            })
+          );
+          setMessageInput('');
+          onNotify(`Voice note (${dur}s) queued into 15m buffer.`);
         };
+        reader.onerror = () => {
+          onNotify('Could not read recorded audio — please type instead.');
+        };
+        reader.readAsDataURL(blob);
+      };
 
-        rec.start();
-        recognitionRef.current = rec;
-      } catch (err) {
-        console.warn('SpeechRec start failed:', err);
+      mediaRecorderRef.current = recorder;
+      recorder.start(250);
+      setVoiceDuration(0);
+      setIsRecordingVoice(true);
+      onNotify('🎙️ Recording WhatsApp voice note... Speak in Hindi, Hinglish or English.');
+    } catch (err: any) {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
       }
-    }
-
-    if (hasMediaStream) {
-      onNotify('🎙️ Recording WhatsApp voice note... Speak in Hinglish or English.');
-    } else {
-      onNotify('🎙️ Recording voice note (voice assistant active)...');
+      mediaRecorderRef.current = null;
+      setIsRecordingVoice(false);
+      onNotify(
+        isMicPermissionError(err)
+          ? MIC_BLOCKED_MESSAGE
+          : 'Could not start microphone — please type instead.'
+      );
     }
   };
 
   const stopAndSendVoiceRecording = () => {
-    if (recognitionRef.current) {
+    recordingDurationRef.current = Math.max(1, voiceDuration || 1);
+    recordingDiscardedRef.current = false;
+    setIsRecordingVoice(false);
+    setVoiceDuration(0);
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state !== 'inactive') {
       try {
-        recognitionRef.current.stop();
-      } catch {}
-      recognitionRef.current = null;
-    }
-    if (mediaStreamRef.current) {
+        rec.stop();
+      } catch {
+        onNotify('Could not finish recording — please type instead.');
+      }
+    } else if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
-    setIsRecordingVoice(false);
-
-    const spokenText =
-      voiceTranscript.trim() ||
-      messageInput.trim() ||
-      'Sahab kaam start kar diya hai aur market se saman le liya hai.';
-
-    const finalNoteText = spokenText.startsWith('Voice Note:')
-      ? spokenText
-      : `Voice Note: "${spokenText}"`;
-
-    const dur = Math.max(2, voiceDuration || 4);
-
-    // The owner's voice note is a brain dump or a reply: handled like typed text.
-    if (isOwnerChat && onOwnerMessage) {
-      onOwnerMessage(selectedPhone, spokenText.replace(/^Voice Note:\s*"?|"$/g, '').trim());
-      setMessageInput('');
-      setVoiceTranscript('');
-      setVoiceDuration(0);
-      setIsRecordingVoice(false);
-      return;
-    }
-
-    onEnqueueMessage(selectedPhone, {
-      type: 'audio',
-      fileName: `voice_note_${dur}s.m4a`,
-      mimeType: 'audio/mp4',
-      fileSizeMB: Math.max(0.1, Number((dur * 0.04).toFixed(2))),
-      textContent: finalNoteText,
-    });
-
-    setMessageInput('');
-    setVoiceTranscript('');
-    setVoiceDuration(0);
-    onNotify(`Inbound Hinglish voice note (${dur}s) recorded into 15m buffer.`);
   };
 
   const cancelVoiceRecording = () => {
-    if (recognitionRef.current) {
+    recordingDiscardedRef.current = true;
+    setIsRecordingVoice(false);
+    setVoiceDuration(0);
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state !== 'inactive') {
       try {
-        recognitionRef.current.stop();
+        rec.stop();
       } catch {}
-      recognitionRef.current = null;
     }
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
-    setIsRecordingVoice(false);
-    setVoiceTranscript('');
-    setVoiceDuration(0);
+    audioChunksRef.current = [];
     onNotify('Voice note discarded.');
   };
 
@@ -981,7 +1018,7 @@ export const WhatsAppSimulatorDrawer: React.FC<WhatsAppSimulatorDrawerProps> = (
               <div className="w-1 bg-danger-solid animate-bounce rounded-full h-3 delay-200" />
             </div>
             <p className="truncate text-xs italic text-danger">
-              {voiceTranscript || 'Recording voice note... speak in Hinglish/English'}
+              Recording voice note... speak in Hindi, Hinglish or English
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">

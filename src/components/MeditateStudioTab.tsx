@@ -323,6 +323,7 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
   // 0-Token Web Dictation Hook (final results only; interim shown separately)
   const {
     isRecording: isListening,
+    isTranscribing: isVoiceTranscribing,
     recordingSeconds: listeningSeconds,
     isSupported: isVoiceSupported,
     interimTranscript,
@@ -1437,6 +1438,12 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                   </div>
                 )}
 
+                {isVoiceTranscribing && (
+                  <p className="text-[11px] text-signal-ink font-medium px-0.5" role="status">
+                    Transcribing voice note…
+                  </p>
+                )}
+
                 {(!isVoiceSupported || voiceErrorMessage) && (
                   <p className="text-[11px] text-slate px-0.5" role="status">
                     {voiceErrorMessage || "Voice input isn't supported in this browser."}
@@ -1444,12 +1451,13 @@ export const MeditateStudioTab: React.FC<MeditateStudioTabProps> = ({
                 )}
 
                 <div className="flex items-end gap-2">
-                  {/* Voice Button (hidden when SpeechRecognition is unavailable) */}
+                  {/* Voice Button */}
                   {isVoiceSupported && (
                     <button
                       type="button"
                       onClick={toggleVoiceRecording}
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all shadow-[var(--shadow-card)] ${
+                      disabled={isVoiceTranscribing}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all shadow-[var(--shadow-card)] disabled:opacity-50 ${
                         isListening
                           ? 'bg-danger-solid text-white ring-2 ring-danger-border'
                           : 'border border-hairline-strong bg-paper text-ink hover:bg-signal-soft hover:text-signal-ink hover:border-signal-border'

@@ -603,3 +603,20 @@ export async function fetchVoiceNoteApi(params: {
   }
   return { audioBase64: body.audioBase64, mimeType: body.mimeType || 'audio/wav' };
 }
+
+/** Transcribe a MediaRecorder audio clip (Hindi/Hinglish/English) via Gemini on the server. */
+export async function transcribeAudioApi(params: {
+  audioBase64: string;
+  mimeType: string;
+}): Promise<{ text: string; modelUsed?: string }> {
+  const response = await fetch('/api/ai/transcribe', {
+    method: 'POST',
+    headers: await jsonHeadersWithAuth(),
+    body: JSON.stringify(params),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body?.error || `Could not transcribe voice note (${response.status})`);
+  }
+  return { text: String(body?.text || ''), modelUsed: body?.modelUsed };
+}
